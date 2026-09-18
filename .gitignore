@@ -1,0 +1,25 @@
+# Variables de entorno sensibles
+.env
+
+# Archivos y ejecutables temporales
+scratch/
+*.exe
+
+# Herramientas del IDE / editor
+.kilo/
+.vscode/
+.idea/
+
+# Logs del sistema
+storage/logs/*.log
+*.log
+
+# Archivos de subida de usuarios (para privacidad)
+storage/documents/*
+!storage/documents/.gitignore
+!storage/documents/.gitkeep
+
+# Archivos de sistema operativo
+.DS_Store
+Thumbs.db
+Desktop.ini
