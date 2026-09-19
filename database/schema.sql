@@ -220,7 +220,7 @@ CREATE TABLE `expediente_movimientos` (
     `observacion` TEXT NULL,
     `es_publico` TINYINT(1) NOT NULL DEFAULT 1,
     `ip` VARCHAR(45) NULL,
-    `user_agent` VARCHAR(255) NULL,
+    `user_agent` VARCHAR(500) NULL,
     `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT `fk_mov_expediente` FOREIGN KEY (`expediente_id`) REFERENCES `expedientes` (`id`) ON DELETE RESTRICT,
     CONSTRAINT `fk_mov_origen` FOREIGN KEY (`oficina_origen_id`) REFERENCES `oficinas` (`id`) ON DELETE SET NULL,

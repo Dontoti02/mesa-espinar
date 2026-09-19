@@ -203,6 +203,11 @@ class Validator
         }
     }
 
+    private function validateIdentifier(string $identifier): bool
+    {
+        return preg_match('/^[a-zA-Z_][a-zA-Z0-9_]*$/', $identifier) === 1;
+    }
+
     private function validateUnique(string $field, mixed $value, array $params): void
     {
         $table = $params[0] ?? '';
@@ -211,6 +216,10 @@ class Validator
         $idColumn = $params[3] ?? 'id';
 
         if (!$table) {
+            return;
+        }
+
+        if (!$this->validateIdentifier($table) || !$this->validateIdentifier($column) || !$this->validateIdentifier($idColumn)) {
             return;
         }
 
@@ -249,6 +258,28 @@ class Validator
             if (!in_array($ext, $params)) {
                 $allowed = implode(', ', $params);
                 $this->addError($field, "El archivo debe tener una de las siguientes extensiones: {$allowed}.");
+                return;
+            }
+
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $mimeType = $finfo->file($file['tmp_name']);
+            $extToMime = [
+                'pdf' => 'application/pdf',
+                'doc' => 'application/msword',
+                'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'xls' => 'application/vnd.ms-excel',
+                'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'jpg' => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png' => 'image/png',
+                'gif' => 'image/gif',
+                'csv' => 'text/csv',
+                'txt' => 'text/plain',
+                'zip' => 'application/zip',
+            ];
+            $expectedMime = $extToMime[$ext] ?? null;
+            if ($expectedMime !== null && $mimeType !== $expectedMime) {
+                $this->addError($field, "El tipo MIME del archivo no coincide con la extensión detectada.");
             }
         }
     }

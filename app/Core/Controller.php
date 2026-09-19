@@ -59,7 +59,14 @@ abstract class Controller
         $token = $_POST['_csrf_token'] ?? $_SERVER['HTTP_X_CSRF_TOKEN'] ?? null;
         if (!CSRF::validate($token)) {
             Session::setFlash('error', 'Sesión expirada o token CSRF inválido. Por favor intenta de nuevo.');
-            $referer = $_SERVER['HTTP_REFERER'] ?? '/';
+            $referer = '/';
+            if (!empty($_SERVER['HTTP_REFERER'])) {
+                $refHost = parse_url($_SERVER['HTTP_REFERER'], PHP_URL_HOST);
+                $currentHost = $_SERVER['HTTP_HOST'] ?? '';
+                if ($refHost && $refHost === $currentHost) {
+                    $referer = $_SERVER['HTTP_REFERER'];
+                }
+            }
             $this->redirect($referer);
         }
     }

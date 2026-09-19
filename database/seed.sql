@@ -166,10 +166,10 @@ ON DUPLICATE KEY UPDATE `host` = VALUES(`host`);
 -- 10. USUARIOS INICIALES
 -- Superadmin: clave temporal Admin2026! (obliga a cambiar en primer acceso según sección 45)
 INSERT INTO `usuarios` (`id`, `nombres`, `apellidos`, `dni`, `usuario`, `correo`, `password`, `rol_id`, `oficina_id`, `cargo`, `telefono`, `estado`, `debe_cambiar_password`) VALUES
-(1, 'Administrador', 'General', '00000000', 'admin', 'admin@iestpespinar.edu.pe', '$2y$10$IKQRwLdud63dm34H7fvN3.kinwXma3G7hoHE9U4cARBIUvL4uHYgW', 1, 1, 'Superadministrador del Sistema', '984000000', 1, 1),
-(2, 'Operador', 'Mesa de Partes', '11111111', 'mesapartes', 'mesadepartes@iestpespinar.edu.pe', '$2y$10$IKQRwLdud63dm34H7fvN3.kinwXma3G7hoHE9U4cARBIUvL4uHYgW', 3, 2, 'Responsable de Ventanilla', '984000001', 1, 0),
-(3, 'Director', 'General', '22222222', 'director', 'direccion@iestpespinar.edu.pe', '$2y$10$IKQRwLdud63dm34H7fvN3.kinwXma3G7hoHE9U4cARBIUvL4uHYgW', 4, 1, 'Director General IESTP Espinar', '984000002', 1, 0),
-(4, 'Secretaría', 'Académica', '33333333', 'sec_academica', 'secretaria@iestpespinar.edu.pe', '$2y$10$IKQRwLdud63dm34H7fvN3.kinwXma3G7hoHE9U4cARBIUvL4uHYgW', 5, 5, 'Secretaria Académica', '984000003', 1, 0)
+(1, 'Administrador', 'General', '00000000', 'admin', 'admin@iestpespinar.edu.pe', '$2y$10$od76MXmi5fLVXgUh7pugLODPlrUBTQjhJuirkvS9k4yNl5D3rVOQW', 1, 1, 'Superadministrador del Sistema', '984000000', 1, 1),
+(2, 'Operador', 'Mesa de Partes', '11111111', 'mesapartes', 'mesadepartes@iestpespinar.edu.pe', '$2y$10$TG4eL5mquV4WcsXVQIyR8uYy3CMuXtZXWq5/07ePxVKgcijk2Tqyy', 3, 2, 'Responsable de Ventanilla', '984000001', 1, 0),
+(3, 'Director', 'General', '22222222', 'director', 'direccion@iestpespinar.edu.pe', '$2y$10$X.o/fj0l2UhCaIrTEe561ek5ZR0k94ve8OL3cIxPfU6TTd587OCN.', 4, 1, 'Director General IESTP Espinar', '984000002', 1, 0),
+(4, 'Secretaría', 'Académica', '33333333', 'sec_academica', 'secretaria@iestpespinar.edu.pe', '$2y$10$U5ZHzGPnIXHdZX3lFglbbeZX7XvfGFyQHiIRHCLP2gQCkjlxF4Bvy', 5, 5, 'Secretaria Académica', '984000003', 1, 0)
 ON DUPLICATE KEY UPDATE `usuario` = VALUES(`usuario`);
 
 SET FOREIGN_KEY_CHECKS = 1;

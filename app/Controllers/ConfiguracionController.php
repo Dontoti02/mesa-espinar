@@ -106,10 +106,15 @@ class ConfiguracionController extends Controller
         if (!empty($_FILES['logo_principal']['tmp_name']) && $_FILES['logo_principal']['error'] === UPLOAD_ERR_OK) {
             $ext = strtolower(pathinfo($_FILES['logo_principal']['name'], PATHINFO_EXTENSION));
             if (in_array($ext, ['png', 'jpg', 'jpeg', 'webp', 'svg'])) {
-                $nombreLogo = 'logo_' . time() . '.' . $ext;
-                $destino = $uploadDir . '/' . $nombreLogo;
-                if (move_uploaded_file($_FILES['logo_principal']['tmp_name'], $destino)) {
-                    $stmt->execute([':valor' => 'uploads/config/' . $nombreLogo, ':clave' => 'logo_principal']);
+                $finfo = new \finfo(FILEINFO_MIME_TYPE);
+                $mimeType = $finfo->file($_FILES['logo_principal']['tmp_name']);
+                $allowedMimes = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml'];
+                if (in_array($mimeType, $allowedMimes)) {
+                    $nombreLogo = 'logo_' . time() . '.' . $ext;
+                    $destino = $uploadDir . '/' . $nombreLogo;
+                    if (move_uploaded_file($_FILES['logo_principal']['tmp_name'], $destino)) {
+                        $stmt->execute([':valor' => 'uploads/config/' . $nombreLogo, ':clave' => 'logo_principal']);
+                    }
                 }
             }
         }
@@ -118,10 +123,15 @@ class ConfiguracionController extends Controller
         if (!empty($_FILES['favicon']['tmp_name']) && $_FILES['favicon']['error'] === UPLOAD_ERR_OK) {
             $ext = strtolower(pathinfo($_FILES['favicon']['name'], PATHINFO_EXTENSION));
             if (in_array($ext, ['png', 'ico', 'svg'])) {
-                $nombreFav = 'favicon_' . time() . '.' . $ext;
-                $destino = $uploadDir . '/' . $nombreFav;
-                if (move_uploaded_file($_FILES['favicon']['tmp_name'], $destino)) {
-                    $stmt->execute([':valor' => 'uploads/config/' . $nombreFav, ':clave' => 'favicon']);
+                $finfo = new \finfo(FILEINFO_MIME_TYPE);
+                $mimeType = $finfo->file($_FILES['favicon']['tmp_name']);
+                $allowedMimes = ['image/png', 'image/x-icon', 'image/svg+xml'];
+                if (in_array($mimeType, $allowedMimes)) {
+                    $nombreFav = 'favicon_' . time() . '.' . $ext;
+                    $destino = $uploadDir . '/' . $nombreFav;
+                    if (move_uploaded_file($_FILES['favicon']['tmp_name'], $destino)) {
+                        $stmt->execute([':valor' => 'uploads/config/' . $nombreFav, ':clave' => 'favicon']);
+                    }
                 }
             }
         }

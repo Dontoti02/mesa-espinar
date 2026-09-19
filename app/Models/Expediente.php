@@ -46,7 +46,7 @@ class Expediente extends Model
     public function generarCodigoSeguimiento(): string
     {
         do {
-            $codigo = strtoupper(substr(bin2hex(random_bytes(6)), 0, 10));
+            $codigo = strtoupper(substr(bin2hex(random_bytes(8)), 0, 12));
             $existe = $this->first("codigo_seguimiento = :c", [':c' => $codigo]);
         } while ($existe !== null);
 

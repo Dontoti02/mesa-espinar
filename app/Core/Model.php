@@ -42,17 +42,38 @@ abstract class Model
         return $result ?: null;
     }
 
+    protected function sanitizeOrderBy(string $orderBy): string
+    {
+        $allowedDirections = ['ASC', 'DESC'];
+        $parts = explode(',', $orderBy);
+        $safe = [];
+
+        foreach ($parts as $part) {
+            $part = trim($part);
+            if (preg_match('/^(\w+)\s+(ASC|DESC)$/i', $part, $m)) {
+                $safe[] = "`{$m[1]}` {$m[2]}";
+            } elseif (preg_match('/^(\w+)$/i', $part, $m)) {
+                $safe[] = "`{$m[1]}` ASC";
+            }
+        }
+
+        return !empty($safe) ? implode(', ', $safe) : "`id` DESC";
+    }
+
     public function all(string $orderBy = 'id DESC'): array
     {
-        $stmt = $this->db()->query("SELECT * FROM `{$this->table}` ORDER BY {$orderBy}");
+        $safeOrderBy = $this->sanitizeOrderBy($orderBy);
+        $stmt = $this->db()->query("SELECT * FROM `{$this->table}` ORDER BY {$safeOrderBy}");
         return $stmt->fetchAll();
     }
 
     public function where(string $condition, array $params = [], string $orderBy = 'id DESC', ?int $limit = null): array
     {
-        $sql = "SELECT * FROM `{$this->table}` WHERE {$condition} ORDER BY {$orderBy}";
+        $safeOrderBy = $this->sanitizeOrderBy($orderBy);
+        $safeLimit = max(1, (int)$limit);
+        $sql = "SELECT * FROM `{$this->table}` WHERE {$condition} ORDER BY {$safeOrderBy}";
         if ($limit !== null) {
-            $sql .= " LIMIT {$limit}";
+            $sql .= " LIMIT {$safeLimit}";
         }
         $stmt = $this->db()->prepare($sql);
         $stmt->execute($params);
@@ -137,7 +158,10 @@ abstract class Model
         $totalCount = $this->count($condition, $params);
         $totalPages = (int)ceil($totalCount / $perPage);
 
-        $sql = "SELECT * FROM `{$this->table}` WHERE {$condition} ORDER BY {$orderBy} LIMIT {$perPage} OFFSET {$offset}";
+        $safeOrderBy = $this->sanitizeOrderBy($orderBy);
+        $safePerPage = max(1, (int)$perPage);
+        $safeOffset = max(0, (int)$offset);
+        $sql = "SELECT * FROM `{$this->table}` WHERE {$condition} ORDER BY {$safeOrderBy} LIMIT {$safePerPage} OFFSET {$safeOffset}";
         $stmt = $this->db()->prepare($sql);
         $stmt->execute($params);
         $data = $stmt->fetchAll();

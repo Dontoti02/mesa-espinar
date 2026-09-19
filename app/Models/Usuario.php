@@ -9,9 +9,8 @@ class Usuario extends Model
 {
     protected string $table = 'usuarios';
     protected array $fillable = [
-        'nombres', 'apellidos', 'dni', 'usuario', 'correo', 'password',
-        'rol_id', 'oficina_id', 'cargo', 'telefono', 'estado',
-        'debe_cambiar_password', 'ultimo_acceso'
+        'nombres', 'apellidos', 'dni', 'usuario', 'correo',
+        'rol_id', 'oficina_id', 'cargo', 'telefono', 'estado'
     ];
 
     public function findByLogin(string $identifier): ?array
@@ -26,6 +25,39 @@ class Usuario extends Model
         $stmt->execute([':id1' => $identifier, ':id2' => $identifier]);
         $user = $stmt->fetch();
         return $user ?: null;
+    }
+
+    public function resetPassword(int $id, string $hashedPassword): bool
+    {
+        $sql = "UPDATE `{$this->table}` SET `password` = :pw, `debe_cambiar_password` = 1 WHERE `{$this->primaryKey}` = :id";
+        $stmt = $this->db()->prepare($sql);
+        $stmt->bindValue(':pw', $hashedPassword);
+        $stmt->bindValue(':id', $id);
+        return $stmt->execute();
+    }
+
+    public function createUser(array $data, string $hashedPassword, bool $debeCambiar): int|string
+    {
+        $data['password'] = $hashedPassword;
+        $data['debe_cambiar_password'] = $debeCambiar ? 1 : 0;
+
+        $fields = array_keys($data);
+        $placeholders = array_map(fn($f) => ":{$f}", $fields);
+
+        $sql = sprintf(
+            "INSERT INTO `%s` (`%s`) VALUES (%s)",
+            $this->table,
+            implode('`, `', $fields),
+            implode(', ', $placeholders)
+        );
+
+        $stmt = $this->db()->prepare($sql);
+        foreach ($data as $key => $value) {
+            $stmt->bindValue(":{$key}", $value);
+        }
+        $stmt->execute();
+
+        return $this->db()->lastInsertId();
     }
 
     public function getUsuariosFiltrados(array $filtros = [], int $page = 1, int $perPage = 15): array

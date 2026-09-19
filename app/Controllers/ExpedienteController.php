@@ -332,6 +332,11 @@ class ExpedienteController extends Controller
 
     public function imprimirCargo(string $id): void
     {
+        if (!Auth::check()) {
+            Session::setFlash('error', 'Debes iniciar sesión.');
+            $this->redirect('/login');
+        }
+
         $expediente = $this->expedienteModel->findDetallado((int)$id);
         if (!$expediente) {
             Session::setFlash('error', 'Expediente no encontrado.');
@@ -358,6 +363,23 @@ class ExpedienteController extends Controller
         if (!$documento) {
             http_response_code(404);
             die("Documento no encontrado.");
+        }
+
+        $expediente = $this->expedienteModel->find((int)$documento['expediente_id']);
+        if (!$expediente) {
+            http_response_code(404);
+            die("Documento no encontrado.");
+        }
+
+        $user = Auth::user();
+        $isSuperAdmin = Auth::hasRole(['superadministrador']);
+        $isMesaPartes = Auth::hasRole(['mesa-de-partes']);
+        $isAssigned = ($expediente['usuario_responsable_id'] == Auth::id());
+        $isSameOffice = ($expediente['oficina_actual_id'] == ($user['oficina_id'] ?? 0));
+
+        if (!$isSuperAdmin && !$isMesaPartes && !$isAssigned && !$isSameOffice) {
+            http_response_code(403);
+            die("No tienes permiso para descargar este documento.");
         }
 
         $rutaAbsoluta = dirname(__DIR__, 2) . '/' . ltrim($documento['ruta'], '/');

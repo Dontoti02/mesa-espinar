@@ -99,20 +99,19 @@ class UsuarioController extends Controller
         }
 
         $hashed = password_hash($_POST['password'], PASSWORD_BCRYPT);
-        $nuevoId = $this->usuarioModel->insert([
+        $debeCambiar = isset($_POST['debe_cambiar_password']) ? true : false;
+        $nuevoId = $this->usuarioModel->createUser([
             'nombres' => trim($_POST['nombres']),
             'apellidos' => trim($_POST['apellidos']),
             'dni' => trim($_POST['dni']),
             'usuario' => trim($_POST['usuario']),
             'correo' => trim($_POST['correo']),
-            'password' => $hashed,
             'rol_id' => (int)$_POST['rol_id'],
             'oficina_id' => !empty($_POST['oficina_id']) ? (int)$_POST['oficina_id'] : null,
             'cargo' => trim($_POST['cargo'] ?? ''),
             'telefono' => trim($_POST['telefono'] ?? ''),
-            'estado' => 1,
-            'debe_cambiar_password' => isset($_POST['debe_cambiar_password']) ? 1 : 0
-        ]);
+            'estado' => 1
+        ], $hashed, $debeCambiar);
 
         logAudit('CREAR_USUARIO', 'Usuarios', (string)$nuevoId, "Usuario creado: {$_POST['usuario']}");
         Session::setFlash('success', 'Usuario registrado exitosamente.');
@@ -191,7 +190,8 @@ class UsuarioController extends Controller
                 Session::setFlash('error', 'La nueva contraseña debe contener al menos 6 caracteres.');
                 $this->redirect("/usuarios/{$id}/editar");
             }
-            $updateData['password'] = password_hash($_POST['password'], PASSWORD_BCRYPT);
+            $pwHash = password_hash($_POST['password'], PASSWORD_BCRYPT);
+            $this->usuarioModel->resetPassword((int)$id, $pwHash);
         }
 
         $this->usuarioModel->update((int)$id, $updateData);
@@ -245,15 +245,12 @@ class UsuarioController extends Controller
             $this->redirect('/usuarios');
         }
 
-        $tempPassword = 'User' . date('Y') . '!';
+        $tempPassword = bin2hex(random_bytes(8));
         $hashed = password_hash($tempPassword, PASSWORD_BCRYPT);
-        $this->usuarioModel->update((int)$id, [
-            'password' => $hashed,
-            'debe_cambiar_password' => 1
-        ]);
+        $this->usuarioModel->resetPassword((int)$id, $hashed);
 
         logAudit('RESET_PASSWORD', 'Usuarios', (string)$id, "Contraseña restablecida para {$usuario['usuario']}");
-        Session::setFlash('success', "Contraseña restablecida a: {$tempPassword}. Se exigirá cambio en el siguiente inicio.");
+        Session::setFlash('success', "Contraseña restablecida. Se exigirá cambio en el siguiente inicio.");
         $this->redirect('/usuarios');
     }
 }

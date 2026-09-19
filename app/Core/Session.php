@@ -21,6 +21,8 @@ class Session
                 ]);
 
                 session_name($_ENV['SESSION_COOKIE_NAME'] ?? 'mesapartes_session');
+
+                ini_set('session.use_strict_mode', '1');
             }
             @session_start();
         }

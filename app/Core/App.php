@@ -76,7 +76,7 @@ class App
     {
         $logDir = dirname(__DIR__, 2) . '/storage/logs';
         if (!is_dir($logDir)) {
-            @mkdir($logDir, 0777, true);
+            @mkdir($logDir, 0755, true);
         }
         $logMessage = sprintf(
             "[%s] Exception: %s in %s on line %d\nStack trace:\n%s\n\n",

@@ -47,6 +47,21 @@ class NotificacionController extends Controller
     public function marcarLeida(string $id): void
     {
         $this->validateCSRF();
+        if (!Auth::check()) {
+            $this->redirect('/login');
+        }
+
+        $notif = $this->notificacionModel->find((int)$id);
+        if (!$notif) {
+            $this->redirect('/notificaciones');
+        }
+
+        $userId = Auth::id();
+        $oficinaId = Auth::officeId();
+        if (($notif['usuario_id'] ?? null) != $userId && ($notif['oficina_id'] ?? null) != $oficinaId) {
+            $this->redirect('/notificaciones');
+        }
+
         $this->notificacionModel->update((int)$id, [
             'leido' => 1,
             'fecha_leido' => date('Y-m-d H:i:s')

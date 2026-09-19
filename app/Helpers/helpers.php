@@ -201,13 +201,21 @@ if (!function_exists('logAudit')) {
 if (!function_exists('dynamicCssVariables')) {
     function dynamicCssVariables(): string
     {
-        $primary = config('color_primario', '#0B4F8A');
-        $secondary = config('color_secundario', '#F59E0B');
-        $accent = config('color_acento', '#DC2626');
-        $sidebar = config('color_sidebar', '#102A43');
-        $header = config('color_encabezado', '#FFFFFF');
-        $text = config('color_texto', '#1E293B');
-        $bg = config('color_fondo', '#F8FAFC');
+        $sanitizeColor = function ($val) {
+            $val = trim($val);
+            if (preg_match('/^#[0-9A-Fa-f]{3,8}$/', $val)) {
+                return $val;
+            }
+            return '#000000';
+        };
+
+        $primary = $sanitizeColor(config('color_primario', '#0B4F8A'));
+        $secondary = $sanitizeColor(config('color_secundario', '#F59E0B'));
+        $accent = $sanitizeColor(config('color_acento', '#DC2626'));
+        $sidebar = $sanitizeColor(config('color_sidebar', '#102A43'));
+        $header = $sanitizeColor(config('color_encabezado', '#FFFFFF'));
+        $text = $sanitizeColor(config('color_texto', '#1E293B'));
+        $bg = $sanitizeColor(config('color_fondo', '#F8FAFC'));
 
         return "
         <style id='dynamic-institutional-styles'>
