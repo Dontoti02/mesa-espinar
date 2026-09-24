@@ -28,11 +28,11 @@ class ConsultaController extends Controller
 
     public function home(): void
     {
-        $tramitesPopulares = $this->tipoTramiteModel->allActivosVirtuales();
+        $tramitesPopulares = $this->tipoTramiteModel->masDemandadosVirtuales(6);
 
         $this->render('public.home', [
             'pageTitle' => 'Mesa de Partes Virtual - Inicio',
-            'tramites' => array_slice($tramitesPopulares, 0, 6)
+            'tramites' => $tramitesPopulares
         ], 'public');
     }
 

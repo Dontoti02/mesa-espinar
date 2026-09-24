@@ -57,9 +57,15 @@
                             <span class="badge bg-light text-primary border border-primary-subtle fw-bold">
                                 <?= e($t['codigo']) ?>
                             </span>
-                            <span class="badge bg-secondary-subtle text-secondary small">
-                                <i class="bi bi-clock me-1"></i><?= $t['plazo_referencial_dias'] ?> días
-                            </span>
+                            <?php if (!empty($t['requiere_pago'])): ?>
+                                <span class="badge bg-warning-subtle text-dark border border-warning-subtle small">
+                                    S/ <?= number_format((float)$t['monto'], 2) ?>
+                                </span>
+                            <?php else: ?>
+                                <span class="badge bg-success-subtle text-success border border-success-subtle small">
+                                    Gratuito
+                                </span>
+                            <?php endif; ?>
                         </div>
                         <h6 class="fw-bold text-dark mb-2"><?= e($t['nombre']) ?></h6>
                         <p class="small text-muted mb-3">
