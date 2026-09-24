@@ -5,8 +5,8 @@
     </div>
     <div class="d-flex gap-2">
         <a href="<?= url('/reportes/exportar-excel?' . http_build_query($filtros)) ?>" class="btn btn-success d-inline-flex align-items-center gap-2">
-            <i class="bi bi-file-earmark-spreadsheet-fill"></i>
-            <span>Exportar a Excel (CSV)</span>
+            <i class="bi bi-file-earmark-excel-fill"></i>
+            <span>Exportar a Excel (.xlsx)</span>
         </a>
         <a href="<?= url('/reportes/imprimir?' . http_build_query($filtros)) ?>" target="_blank" class="btn btn-outline-secondary d-inline-flex align-items-center gap-2">
             <i class="bi bi-printer-fill"></i>

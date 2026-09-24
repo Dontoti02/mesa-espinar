@@ -9,6 +9,7 @@ use App\Core\Session;
 use App\Models\Estado;
 use App\Models\Oficina;
 use App\Models\TipoTramite;
+use App\Services\SimpleXlsxWriter;
 
 class ReporteController extends Controller
 {
@@ -85,57 +86,81 @@ class ReporteController extends Controller
         $dataReporte = $this->obtenerDatosReporte($filtros);
         $expedientes = $dataReporte['expedientes'];
 
-        $filename = "reporte_expedientes_" . date('Ymd_His') . ".csv";
-
-        header('Content-Type: text/csv; charset=utf-8');
-        header('Content-Disposition: attachment; filename=' . $filename);
-
-        $output = fopen('php://output', 'w');
-        // Agregar BOM para compatibilidad con Excel (acentos y ñ)
-        fprintf($output, chr(0xEF).chr(0xBB).chr(0xBF));
-
-        fputcsv($output, [
-            'Numero Expediente',
-            'Codigo Seguimiento',
+        $headers = [
+            'N° Expediente',
+            'Código Seguimiento',
             'Fecha Ingreso',
             'Modalidad',
             'Tipo Documento',
-            'Numero Documento',
+            'Número Documento',
             'Solicitante',
-            'Correo',
-            'Telefono',
-            'Tipo Tramite',
+            'Correo Electrónico',
+            'Teléfono',
+            'Tipo de Trámite',
             'Asunto',
             'Folios',
             'Oficina Actual',
             'Estado',
             'Prioridad',
-            'Fecha Finalizacion'
-        ]);
+            'Fecha Finalización'
+        ];
 
+        $colWidths = [
+            20, // N° Expediente
+            20, // Código Seguimiento
+            20, // Fecha Ingreso
+            14, // Modalidad
+            16, // Tipo Documento
+            18, // Número Documento
+            34, // Solicitante
+            28, // Correo
+            16, // Teléfono
+            30, // Tipo Trámite
+            40, // Asunto
+            10, // Folios
+            26, // Oficina Actual
+            18, // Estado
+            14, // Prioridad
+            20  // Fecha Finalización
+        ];
+
+        $rows = [];
         foreach ($expedientes as $exp) {
-            fputcsv($output, [
+            $solicitante = $exp['tipo_persona'] === 'JURIDICA'
+                ? ($exp['razon_social'] ?: 'Persona Jurídica')
+                : trim(($exp['nombres'] ?? '') . ' ' . ($exp['apellidos'] ?? ''));
+
+            $rows[] = [
                 $exp['numero_expediente'],
                 $exp['codigo_seguimiento'],
                 $exp['fecha_ingreso'],
                 (int)$exp['es_virtual'] === 1 ? 'Virtual' : 'Presencial',
-                $exp['tipo_documento'],
-                $exp['numero_documento'],
-                $exp['tipo_persona'] === 'JURIDICA' ? $exp['razon_social'] : $exp['nombres'] . ' ' . $exp['apellidos'],
-                $exp['correo'],
-                $exp['telefono'],
-                $exp['tipo_tramite_nombre'],
-                $exp['asunto'],
-                $exp['folios'],
-                $exp['oficina_actual_nombre'],
-                $exp['estado_nombre'],
-                $exp['prioridad_nombre'],
+                $exp['tipo_documento'] ?: '-',
+                (string)$exp['numero_documento'],
+                $solicitante ?: '-',
+                $exp['correo'] ?: '-',
+                $exp['telefono'] ?: '-',
+                $exp['tipo_tramite_nombre'] ?: '-',
+                $exp['asunto'] ?: '-',
+                (int)$exp['folios'],
+                $exp['oficina_actual_nombre'] ?: '-',
+                $exp['estado_nombre'] ?: '-',
+                $exp['prioridad_nombre'] ?: '-',
                 $exp['fecha_finalizacion'] ?: '-'
-            ]);
+            ];
         }
 
-        fclose($output);
-        exit;
+        $filename = "reporte_expedientes_" . date('Ymd_His') . ".xlsx";
+        $headerColor = config('color_primario', '#0B4F8A');
+
+        SimpleXlsxWriter::download(
+            filename: $filename,
+            headers: $headers,
+            rows: $rows,
+            sheetTitle: 'Expedientes',
+            colWidths: $colWidths,
+            headerBgColor: $headerColor
+        );
     }
 
     public function imprimir(): void

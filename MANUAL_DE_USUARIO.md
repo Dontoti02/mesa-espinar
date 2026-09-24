@@ -203,7 +203,7 @@ El administrador tiene control total sobre la configuración institucional, usua
 
 ### 4. Dashboard y Reportes
 - **Dashboard**: Muestra estadísticas en tiempo real: total de expedientes recibidos, atendidos, pendientes, expedientes vencidos y gráficos comparativos por oficina.
-- **Reportes**: Puedes generar listados filtrando por rango de fechas, oficina responsable, estado o tipo de trámite. Puedes exportar los datos a **Excel (CSV)** o generar una versión lista para **Imprimir / Guardar en PDF**.
+- **Reportes**: Puedes generar listados filtrando por rango de fechas, oficina responsable, estado o tipo de trámite. Puedes exportar los datos a **Excel (.xlsx)** con formato enriquecido (encabezados institucionales, autofiltros y anchos de columna) o generar una versión lista para **Imprimir / Guardar en PDF**.
 
 ### 5. Auditoría del Sistema (Trazabilidad Inmutable)
 - En **"Auditoría"** puedes revisar la bitácora completa:
