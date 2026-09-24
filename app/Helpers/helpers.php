@@ -49,7 +49,22 @@ if (!function_exists('url')) {
                 || (isset($_SERVER['SERVER_PORT']) && $_SERVER['SERVER_PORT'] == 443);
             $proto = $isHttps ? 'https' : 'http';
 
-            $basePath = parse_url($base, PHP_URL_PATH) ?? '/mesa-espinar';
+            $appUrlPath = parse_url($base, PHP_URL_PATH);
+            if ($appUrlPath === null || $appUrlPath === false || $appUrlPath === '/') {
+                $appUrlPath = '';
+            }
+
+            $scriptName = str_replace('\\', '/', $_SERVER['SCRIPT_NAME'] ?? '');
+            $scriptDir = dirname($scriptName);
+            if ($scriptDir === '/' || $scriptDir === '.' || $scriptDir === '') {
+                $scriptDir = '';
+            }
+
+            if ($scriptDir !== '' && str_ends_with($scriptDir, '/public')) {
+                $scriptDir = substr($scriptDir, 0, -strlen('/public'));
+            }
+
+            $basePath = $scriptDir !== '' ? $scriptDir : $appUrlPath;
             $base = rtrim("{$proto}://{$currentHost}{$basePath}", '/');
         }
 
@@ -61,7 +76,7 @@ if (!function_exists('url')) {
 if (!function_exists('asset')) {
     function asset(string $path): string
     {
-        return url('public/assets/' . ltrim($path, '/'));
+        return url('assets/' . ltrim($path, '/'));
     }
 }
 
@@ -74,7 +89,7 @@ if (!function_exists('uploadUrl')) {
         if (str_starts_with($path, 'http://') || str_starts_with($path, 'https://')) {
             return $path;
         }
-        return url('public/' . ltrim($path, '/'));
+        return url(ltrim($path, '/'));
     }
 }
 
