@@ -127,7 +127,7 @@
 
         <!-- Columna Derecha: Vista Previa en Vivo (Sección 57) -->
         <div class="col-12 col-lg-6">
-            <div class="card card-custom p-4 sticky-top" style="top: 80px;">
+            <div class="card card-custom p-4 sticky-top" style="top: 80px; z-index: 10;">
                 <h6 class="fw-bold text-primary mb-3 pb-2 border-bottom d-flex align-items-center justify-content-between">
                     <span><i class="bi bi-eye-fill me-2"></i> Vista Previa en Tiempo Real</span>
                     <span class="badge bg-success-subtle text-success small">Interactivo</span>

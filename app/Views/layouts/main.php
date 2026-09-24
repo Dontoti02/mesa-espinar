@@ -121,7 +121,7 @@
             padding: 0 24px;
             position: sticky;
             top: 0;
-            z-index: 990;
+            z-index: 1030;
             box-shadow: 0 1px 3px rgba(0,0,0,0.02);
             transition: margin-left 0.3s ease-in-out;
         }
@@ -169,6 +169,7 @@
         @media (max-width: 991.98px) {
             .sidebar {
                 transform: translateX(-100%);
+                z-index: 1045;
             }
             .sidebar.show {
                 transform: translateX(0);
@@ -184,7 +185,7 @@
                 right: 0;
                 bottom: 0;
                 background: rgba(0,0,0,0.4);
-                z-index: 999;
+                z-index: 1040;
             }
             .sidebar-overlay.show {
                 display: block;

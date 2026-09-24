@@ -96,7 +96,7 @@ $tipoSeleccionado = $_GET['tipo'] ?? old('tipo_tramite_id', '');
 
                 <div class="row g-3 mb-4">
                     <div class="col-12 col-md-4">
-                        <label class="form-label fw-semibold">Correo Electrónico (Para Notificaciones) <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold">Correo Electrónico <span class="text-danger">*</span></label>
                         <input type="email" 
                                class="form-control <?= isset($validationErrors['correo']) ? 'is-invalid' : '' ?>" 
                                name="correo" 
@@ -106,7 +106,7 @@ $tipoSeleccionado = $_GET['tipo'] ?? old('tipo_tramite_id', '');
                         <?php if (isset($validationErrors['correo'])): ?>
                             <div class="invalid-feedback"><?= e($validationErrors['correo'][0]) ?></div>
                         <?php endif; ?>
-                        <small class="text-muted" style="font-size: 0.75rem;">Aquí te llegará la confirmación y respuestas oficiales.</small>
+                        <small class="text-muted d-block mt-1" style="font-size: 0.75rem;">Para confirmación y respuestas oficiales.</small>
                     </div>
 
                     <div class="col-12 col-md-4">
@@ -160,7 +160,7 @@ $tipoSeleccionado = $_GET['tipo'] ?? old('tipo_tramite_id', '');
                     </div>
 
                     <div class="col-12 col-md-4">
-                        <label class="form-label fw-semibold">Cantidad Total de Folios (Hojas) <span class="text-danger">*</span></label>
+                        <label class="form-label fw-semibold">Cantidad de Folios <span class="text-danger">*</span></label>
                         <input type="number" class="form-control" name="folios" value="<?= e(old('folios', 1)) ?>" min="1" required>
                         <small class="text-muted" style="font-size: 0.75rem;">Suma del documento principal y todos los anexos.</small>
                     </div>
