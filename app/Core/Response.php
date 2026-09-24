@@ -54,4 +54,32 @@ class Response
         readfile($filePath);
         exit;
     }
+
+    public static function inline(string $filePath, ?string $displayName = null, ?string $mimeType = null): void
+    {
+        if (!file_exists($filePath) || !is_readable($filePath)) {
+            http_response_code(404);
+            die("Archivo no encontrado o no disponible.");
+        }
+
+        $displayName = $displayName ?? basename($filePath);
+        $mimeType = $mimeType ?? (mime_content_type($filePath) ?: 'application/octet-stream');
+        $fileSize = filesize($filePath);
+
+        // Cabeceras seguras para visualización integrada en navegador
+        header('Content-Type: ' . $mimeType);
+        header('Content-Disposition: inline; filename="' . addslashes($displayName) . '"');
+        header('X-Content-Type-Options: nosniff');
+        header('Expires: 0');
+        header('Cache-Control: private, max-age=0, must-revalidate');
+        header('Pragma: public');
+        header('Content-Length: ' . $fileSize);
+
+        if (ob_get_level()) {
+            ob_end_clean();
+        }
+
+        readfile($filePath);
+        exit;
+    }
 }

@@ -59,6 +59,11 @@ class Validator
         return empty($this->errors);
     }
 
+    public function passes(): bool
+    {
+        return empty($this->errors);
+    }
+
     public function fails(): bool
     {
         return !empty($this->errors);
@@ -146,6 +151,14 @@ class Validator
         if (filter_var($value, FILTER_VALIDATE_INT) === false) {
             $label = $this->getFieldLabel($field);
             $this->addError($field, "El campo {$label} debe ser un número entero.");
+        }
+    }
+
+    private function validateDigits(string $field, mixed $value, array $params): void
+    {
+        if (!preg_match('/^[0-9]+$/', trim((string)$value))) {
+            $label = $this->getFieldLabel($field);
+            $this->addError($field, "El campo {$label} solo debe contener números (dígitos).");
         }
     }
 

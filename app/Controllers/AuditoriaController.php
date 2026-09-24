@@ -27,8 +27,12 @@ class AuditoriaController extends Controller
         $params = [];
 
         if (!empty($buscar)) {
-            $conditions[] = "(a.accion LIKE :b OR a.detalles LIKE :b OR a.ip LIKE :b OR u.usuario LIKE :b)";
-            $params[':b'] = "%{$buscar}%";
+            $term = "%{$buscar}%";
+            $conditions[] = "(a.accion LIKE :b1 OR a.detalles LIKE :b2 OR a.ip LIKE :b3 OR u.usuario LIKE :b4)";
+            $params[':b1'] = $term;
+            $params[':b2'] = $term;
+            $params[':b3'] = $term;
+            $params[':b4'] = $term;
         }
 
         if (!empty($modulo)) {

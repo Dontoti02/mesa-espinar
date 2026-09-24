@@ -151,10 +151,20 @@
                                             <li>
                                                 <form action="<?= url("/usuarios/{$u['id']}/toggle-estado") ?>" method="POST" onsubmit="return confirm('¿Confirmas cambiar el estado de este usuario?');">
                                                     <?= csrf_field() ?>
-                                                    <button type="submit" class="dropdown-item py-2 text-<?= (int)$u['estado'] === 1 ? 'danger' : 'success' ?>">
-                                                        <i class="bi bi-power me-2"></i> <?= (int)$u['estado'] === 1 ? 'Desactivar' : 'Activar' ?>
+                                                    <button type="submit" class="dropdown-item py-2 text-<?= (int)$u['estado'] === 1 ? 'warning' : 'success' ?>">
+                                                        <i class="bi bi-power me-2"></i> <?= (int)$u['estado'] === 1 ? 'Desactivar Cuenta' : 'Activar Cuenta' ?>
                                                     </button>
                                                 </form>
+                                            </li>
+                                            <li>
+                                                <button type="button" 
+                                                        class="dropdown-item py-2 text-danger btn-abrir-eliminar-usuario"
+                                                        data-id="<?= $u['id'] ?>"
+                                                        data-nombre="<?= e($u['nombres'] . ' ' . $u['apellidos']) ?>"
+                                                        data-usuario="<?= e($u['usuario']) ?>"
+                                                        data-action="<?= url("/usuarios/{$u['id']}/eliminar") ?>">
+                                                    <i class="bi bi-trash3 me-2"></i> Eliminar
+                                                </button>
                                             </li>
                                         <?php endif; ?>
                                     </ul>
@@ -187,3 +197,61 @@
         </div>
     <?php endif; ?>
 </div>
+
+<!-- Modal Confirmación Eliminar Usuario (Observación 7) -->
+<div class="modal fade" id="modalEliminarUsuario" tabindex="-1" aria-labelledby="modalEliminarUsuarioLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content shadow border-0" style="border-radius: 12px; overflow: hidden;">
+            <form id="formEliminarUsuario" method="POST" action="">
+                <?= csrf_field() ?>
+                <div class="modal-header border-0 pb-0">
+                    <h5 class="modal-title fw-bold text-danger d-flex align-items-center gap-2" id="modalEliminarUsuarioLabel">
+                        <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+                        Confirmar Baja / Eliminación
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+                <div class="modal-body py-3">
+                    <p class="mb-2 fs-6 text-dark">
+                        ¿Está seguro de eliminar al usuario <strong id="eliminarUsuarioNombre" class="text-primary"></strong> (<span id="eliminarUsuarioNick" class="text-muted font-monospace"></span>)?
+                    </p>
+                    <div class="alert alert-warning py-2 px-3 small mb-0 border-0 bg-warning-subtle text-dark">
+                        <i class="bi bi-shield-lock-fill me-1 text-warning fs-6"></i>
+                        <strong>Seguridad Institucional:</strong> Esta acción cancelará inmediatamente el acceso del usuario al sistema. Los registros históricos y expedientes en los que intervino <strong>no serán eliminados</strong> para garantizar la trazabilidad y la validez legal de las actuaciones.
+                    </div>
+                </div>
+                <div class="modal-footer border-0 pt-0">
+                    <button type="button" class="btn btn-outline-secondary px-3" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-danger px-3">
+                        <i class="bi bi-trash3 me-1"></i> Confirmar Eliminación
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const modalEl = document.getElementById('modalEliminarUsuario');
+        const formEl = document.getElementById('formEliminarUsuario');
+        const nombreSpan = document.getElementById('eliminarUsuarioNombre');
+        const nickSpan = document.getElementById('eliminarUsuarioNick');
+
+        if (modalEl && formEl) {
+            const bsModal = new bootstrap.Modal(modalEl);
+            document.querySelectorAll('.btn-abrir-eliminar-usuario').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const action = this.dataset.action;
+                    const nombre = this.dataset.nombre;
+                    const usuario = this.dataset.usuario;
+
+                    formEl.action = action;
+                    nombreSpan.textContent = nombre;
+                    nickSpan.textContent = '@' + usuario;
+                    bsModal.show();
+                });
+            });
+        }
+    });
+</script>

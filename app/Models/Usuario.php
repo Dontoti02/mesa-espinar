@@ -66,8 +66,13 @@ class Usuario extends Model
         $params = [];
 
         if (!empty($filtros['buscar'])) {
-            $conditions[] = "(u.nombres LIKE :b OR u.apellidos LIKE :b OR u.usuario LIKE :b OR u.correo LIKE :b OR u.dni LIKE :b)";
-            $params[':b'] = '%' . trim($filtros['buscar']) . '%';
+            $term = '%' . trim($filtros['buscar']) . '%';
+            $conditions[] = "(u.nombres LIKE :b1 OR u.apellidos LIKE :b2 OR u.usuario LIKE :b3 OR u.correo LIKE :b4 OR u.dni LIKE :b5)";
+            $params[':b1'] = $term;
+            $params[':b2'] = $term;
+            $params[':b3'] = $term;
+            $params[':b4'] = $term;
+            $params[':b5'] = $term;
         }
 
         if (!empty($filtros['rol_id'])) {
@@ -113,5 +118,37 @@ class Usuario extends Model
             'total_records' => $total,
             'total_pages' => (int)ceil($total / $perPage)
         ];
+    }
+
+    public function contarSuperadminsActivos(): int
+    {
+        $sql = "SELECT COUNT(*) FROM `{$this->table}` u 
+                INNER JOIN roles r ON u.rol_id = r.id 
+                WHERE r.slug = 'superadministrador' AND u.estado = 1";
+        return (int)$this->db()->query($sql)->fetchColumn();
+    }
+
+    public function tieneRegistrosHistoricos(int $usuarioId): bool
+    {
+        $db = $this->db();
+
+        $queries = [
+            "SELECT COUNT(*) FROM expedientes WHERE usuario_responsable_id = :id",
+            "SELECT COUNT(*) FROM expediente_movimientos WHERE usuario_id = :id",
+            "SELECT COUNT(*) FROM expediente_documentos WHERE usuario_id = :id",
+            "SELECT COUNT(*) FROM solicitudes_internas WHERE usuario_solicitante_id = :id",
+            "SELECT COUNT(*) FROM solicitudes_internas_respuestas WHERE usuario_respuesta_id = :id",
+            "SELECT COUNT(*) FROM auditoria WHERE usuario_id = :id"
+        ];
+
+        foreach ($queries as $q) {
+            $stmt = $db->prepare($q);
+            $stmt->execute([':id' => $usuarioId]);
+            if ((int)$stmt->fetchColumn() > 0) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

@@ -51,6 +51,7 @@ $router->post('/expedientes/{id}/devolver', ['App\Controllers\DireccionControlle
 $router->post('/expedientes/{id}/finalizar', ['App\Controllers\DireccionController', 'finalizar'], [AuthMiddleware::class]);
 $router->post('/expedientes/{id}/archivar', ['App\Controllers\DireccionController', 'archivar'], [AuthMiddleware::class]);
 $router->get('/expedientes/documento/{id}', ['App\Controllers\ExpedienteController', 'descargarDocumento'], [AuthMiddleware::class]);
+$router->get('/expedientes/documento/{id}/ver', ['App\Controllers\ExpedienteController', 'verDocumento'], [AuthMiddleware::class]);
 
 // DIRECCIÓN (Bandeja exclusiva)
 $router->get('/direccion', ['App\Controllers\DireccionController', 'index'], [AuthMiddleware::class]);
@@ -66,6 +67,7 @@ $router->get('/usuarios/{id}/editar', ['App\Controllers\UsuarioController', 'edi
 $router->post('/usuarios/{id}', ['App\Controllers\UsuarioController', 'update'], [AuthMiddleware::class]);
 $router->post('/usuarios/{id}/toggle-estado', ['App\Controllers\UsuarioController', 'toggleEstado'], [AuthMiddleware::class]);
 $router->post('/usuarios/{id}/reset-password', ['App\Controllers\UsuarioController', 'resetPassword'], [AuthMiddleware::class]);
+$router->post('/usuarios/{id}/eliminar', ['App\Controllers\UsuarioController', 'eliminar'], [AuthMiddleware::class]);
 
 // ROLES Y PERMISOS
 $router->get('/roles', ['App\Controllers\RolController', 'index'], [AuthMiddleware::class]);

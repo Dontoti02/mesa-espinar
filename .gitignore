@@ -7,6 +7,7 @@ scratch/
 
 # Herramientas del IDE / editor
 .kilo/
+.opencode/
 .vscode/
 .idea/
 

@@ -52,7 +52,19 @@ class ExpedienteController extends Controller
             'fecha_hasta' => $_GET['fecha_hasta'] ?? ''
         ];
 
-        $expedientesData = $this->expedienteModel->getExpedientesFiltrados($filtros, $page, 15);
+        try {
+            $expedientesData = $this->expedienteModel->getExpedientesFiltrados($filtros, $page, 15);
+        } catch (\Throwable $e) {
+            error_log("Error al consultar expedientes en Bandeja General: " . $e->getMessage());
+            Session::setFlash('error', 'Ocurrió un inconveniente al procesar los filtros de búsqueda. Intente con otros criterios.');
+            $expedientesData = [
+                'data' => [],
+                'current_page' => 1,
+                'per_page' => 15,
+                'total_records' => 0,
+                'total_pages' => 0
+            ];
+        }
         $estados = $this->estadoModel->allActivos();
         $oficinas = $this->oficinaModel->allActivas();
         $tiposTramite = $this->tipoTramiteModel->allActivosVirtuales();
@@ -104,6 +116,7 @@ class ExpedienteController extends Controller
             'numero_documento' => 'required|max:20',
             'nombres' => 'required|max:100',
             'correo' => 'required|email|max:120',
+            'telefono' => 'digits|min:6|max:15',
             'tipo_tramite_id' => 'required|integer',
             'asunto' => 'required|max:255',
             'folios' => 'required|integer|min:1',
@@ -383,8 +396,57 @@ class ExpedienteController extends Controller
         }
 
         $rutaAbsoluta = dirname(__DIR__, 2) . '/' . ltrim($documento['ruta'], '/');
+        $baseDir = realpath(dirname(__DIR__, 2) . '/storage/documents');
+        $realFile = realpath($rutaAbsoluta);
+        if (!$realFile || !file_exists($realFile) || ($baseDir && !str_starts_with($realFile, $baseDir))) {
+            http_response_code(404);
+            die("Archivo no disponible o ruta inválida.");
+        }
 
         logAudit('DESCARGAR_DOCUMENTO', 'Documentos', (string)$id, "Descarga de archivo: {$documento['nombre_original']}");
-        Response::download($rutaAbsoluta, $documento['nombre_original'], $documento['mime_type']);
+        Response::download($realFile, $documento['nombre_original'], $documento['mime_type']);
+    }
+
+    public function verDocumento(string $id): void
+    {
+        if (!Auth::check()) {
+            http_response_code(401);
+            die("Debes iniciar sesión para visualizar documentos internos.");
+        }
+
+        $documento = $this->documentoModel->find((int)$id);
+        if (!$documento) {
+            http_response_code(404);
+            die("Documento no encontrado.");
+        }
+
+        $expediente = $this->expedienteModel->find((int)$documento['expediente_id']);
+        if (!$expediente) {
+            http_response_code(404);
+            die("Expediente no encontrado.");
+        }
+
+        $user = Auth::user();
+        $isSuperAdmin = Auth::hasRole(['superadministrador']);
+        $isMesaPartes = Auth::hasRole(['mesa-de-partes']);
+        $isAssigned = ($expediente['usuario_responsable_id'] == Auth::id());
+        $isSameOffice = ($expediente['oficina_actual_id'] == ($user['oficina_id'] ?? 0));
+
+        if (!$isSuperAdmin && !$isMesaPartes && !$isAssigned && !$isSameOffice) {
+            http_response_code(403);
+            die("No tienes permiso para visualizar este documento.");
+        }
+
+        $rutaAbsoluta = dirname(__DIR__, 2) . '/' . ltrim($documento['ruta'], '/');
+        $baseDir = realpath(dirname(__DIR__, 2) . '/storage/documents');
+        $realFile = realpath($rutaAbsoluta);
+
+        if (!$realFile || !file_exists($realFile) || ($baseDir && !str_starts_with($realFile, $baseDir))) {
+            http_response_code(404);
+            die("Archivo no disponible o ruta inválida.");
+        }
+
+        logAudit('VISUALIZAR_DOCUMENTO', 'Documentos', (string)$id, "Visualización en línea de archivo: {$documento['nombre_original']}");
+        Response::inline($realFile, $documento['nombre_original'], $documento['mime_type']);
     }
 }

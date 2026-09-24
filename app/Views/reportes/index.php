@@ -17,15 +17,22 @@
 
 <!-- Filtros Multidimensionales (Sección 19) -->
 <div class="card card-custom p-4 mb-4">
-    <form action="<?= url('/reportes') ?>" method="GET" class="row g-3 align-items-end">
+    <form action="<?= url('/reportes') ?>" method="GET" id="formFiltroReportes" class="row g-3 align-items-end">
         <div class="col-12 col-md-3">
             <label class="form-label small fw-semibold">Fecha Desde</label>
-            <input type="date" class="form-control" name="fecha_desde" value="<?= e($filtros['fecha_desde']) ?>">
+            <input type="date" class="form-control" name="fecha_desde" id="filtroFechaDesde" value="<?= e($filtros['fecha_desde']) ?>">
         </div>
 
         <div class="col-12 col-md-3">
             <label class="form-label small fw-semibold">Fecha Hasta</label>
-            <input type="date" class="form-control" name="fecha_hasta" value="<?= e($filtros['fecha_hasta']) ?>">
+            <input type="date" class="form-control" name="fecha_hasta" id="filtroFechaHasta" value="<?= e($filtros['fecha_hasta']) ?>">
+        </div>
+
+        <div class="col-12" id="alertaRangoFechas" style="display: none;">
+            <div class="alert alert-danger py-2 px-3 small mb-0 d-flex align-items-center gap-2">
+                <i class="bi bi-exclamation-triangle-fill flex-shrink-0"></i>
+                <span>La fecha de inicio (Desde) no puede ser posterior a la fecha final (Hasta).</span>
+            </div>
         </div>
 
         <div class="col-12 col-md-3">
@@ -155,3 +162,54 @@
         </table>
     </div>
 </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const form = document.getElementById('formFiltroReportes');
+        const fechaDesde = document.getElementById('filtroFechaDesde');
+        const fechaHasta = document.getElementById('filtroFechaHasta');
+        const alerta = document.getElementById('alertaRangoFechas');
+        const submitBtn = form ? form.querySelector('button[type="submit"]') : null;
+
+        if (fechaDesde && fechaHasta && alerta) {
+            function validarRangoFechas() {
+                const desdeVal = fechaDesde.value;
+                const hastaVal = fechaHasta.value;
+
+                if (desdeVal) {
+                    fechaHasta.min = desdeVal;
+                }
+
+                if (desdeVal && hastaVal && desdeVal > hastaVal) {
+                    alerta.style.display = 'block';
+                    fechaDesde.classList.add('is-invalid');
+                    fechaHasta.classList.add('is-invalid');
+                    if (submitBtn) submitBtn.disabled = true;
+                    return false;
+                } else {
+                    alerta.style.display = 'none';
+                    fechaDesde.classList.remove('is-invalid');
+                    fechaHasta.classList.remove('is-invalid');
+                    if (submitBtn) submitBtn.disabled = false;
+                    return true;
+                }
+            }
+
+            fechaDesde.addEventListener('change', validarRangoFechas);
+            fechaHasta.addEventListener('change', validarRangoFechas);
+            fechaDesde.addEventListener('input', validarRangoFechas);
+            fechaHasta.addEventListener('input', validarRangoFechas);
+
+            // Validación al intentar enviar
+            form.addEventListener('submit', (e) => {
+                if (!validarRangoFechas()) {
+                    e.preventDefault();
+                    alerta.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+                }
+            });
+
+            // Inicializar min y validación inicial
+            validarRangoFechas();
+        }
+    });
+</script>

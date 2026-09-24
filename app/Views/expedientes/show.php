@@ -142,32 +142,68 @@
             </div>
         </div>
 
-        <!-- Documentos Adjuntos -->
+        <!-- Documentos Adjuntos (Observación 4) -->
         <div class="card card-custom p-4 mb-4">
-            <h6 class="fw-bold text-primary mb-3 pb-2 border-bottom">
-                <i class="bi bi-paperclip me-2"></i> Documentos Adjuntos (<?= count($documentos) ?>)
+            <h6 class="fw-bold text-primary mb-3 pb-2 border-bottom d-flex align-items-center justify-content-between">
+                <span><i class="bi bi-paperclip me-2"></i> Documentos Adjuntos (<?= count($documentos) ?>)</span>
+                <?php if (!empty($documentos)): ?>
+                    <span class="badge bg-primary-subtle text-primary small"><?= count($documentos) ?> <?= count($documentos) === 1 ? 'archivo' : 'archivos' ?></span>
+                <?php endif; ?>
             </h6>
             <?php if (empty($documentos)): ?>
                 <p class="text-muted small mb-0">No se registran archivos adjuntos.</p>
             <?php else: ?>
-                <div class="list-group list-group-flush">
-                    <?php foreach ($documentos as $doc): ?>
-                        <div class="list-group-item px-0 py-2 d-flex justify-content-between align-items-center">
-                            <div class="d-flex align-items-center gap-2 text-truncate" style="max-width: 260px;">
-                                <i class="bi bi-file-earmark-pdf-fill text-danger fs-4"></i>
-                                <div>
-                                    <div class="fw-semibold small text-truncate" title="<?= e($doc['nombre_original']) ?>">
-                                        <?= e($doc['nombre_original']) ?>
+                <div class="d-flex flex-column gap-2">
+                    <?php foreach ($documentos as $num => $doc): ?>
+                        <?php 
+                            $ext = strtolower($doc['extension'] ?? pathinfo($doc['nombre_original'], PATHINFO_EXTENSION));
+                            $esPdf = ($ext === 'pdf');
+                            $esImagen = in_array($ext, ['jpg', 'jpeg', 'png', 'webp']);
+                            $esPrevisualizable = $esPdf || $esImagen;
+                            $peso = ($doc['tamano_bytes'] >= 1048576) 
+                                ? round($doc['tamano_bytes'] / 1048576, 2) . ' MB' 
+                                : round($doc['tamano_bytes'] / 1024, 1) . ' KB';
+                            $iconoClass = 'bi-file-earmark-fill text-secondary';
+                            if ($esPdf) $iconoClass = 'bi-file-earmark-pdf-fill text-danger';
+                            elseif (in_array($ext, ['doc', 'docx'])) $iconoClass = 'bi-file-earmark-word-fill text-primary';
+                            elseif (in_array($ext, ['xls', 'xlsx'])) $iconoClass = 'bi-file-earmark-excel-fill text-success';
+                            elseif ($esImagen) $iconoClass = 'bi-file-earmark-image-fill text-info';
+                        ?>
+                        <div class="p-2 border rounded bg-white d-flex align-items-center justify-content-between gap-2 shadow-sm">
+                            <div class="d-flex align-items-center gap-2 text-truncate" style="min-width: 0;">
+                                <i class="bi <?= $iconoClass ?> fs-4 flex-shrink-0"></i>
+                                <div class="text-truncate">
+                                    <div class="fw-semibold small text-truncate text-dark" title="<?= e($doc['nombre_original']) ?>">
+                                        <?= ($num + 1) . '. ' . e($doc['nombre_original']) ?>
                                     </div>
                                     <small class="text-muted" style="font-size: 0.72rem;">
-                                        <?= round($doc['tamano_bytes'] / 1024, 1) ?> KB
-                                        <?= (int)$doc['es_principal'] === 1 ? ' • <span class="text-primary fw-bold">Principal</span>' : '' ?>
+                                        <span class="badge bg-light text-dark border me-1"><?= strtoupper($ext) ?></span>
+                                        <?= $peso ?>
+                                        <?= (int)$doc['es_principal'] === 1 ? ' • <span class="badge bg-primary text-white" style="font-size: 0.65rem;">Principal</span>' : '' ?>
                                     </small>
                                 </div>
                             </div>
-                            <a href="<?= url("/expedientes/documento/{$doc['id']}") ?>" class="btn btn-sm btn-outline-primary" title="Descargar documento">
-                                <i class="bi bi-download"></i>
-                            </a>
+                            <div class="d-flex align-items-center gap-1 flex-shrink-0">
+                                <?php if ($esPrevisualizable): ?>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-primary btn-ver-documento px-2 py-1" 
+                                            data-id="<?= $doc['id'] ?>"
+                                            data-nombre="<?= e($doc['nombre_original']) ?>"
+                                            data-url-ver="<?= url("/expedientes/documento/{$doc['id']}/ver") ?>"
+                                            data-url-descarga="<?= url("/expedientes/documento/{$doc['id']}") ?>"
+                                            data-es-pdf="<?= $esPdf ? '1' : '0' ?>"
+                                            title="Ver documento en visor integrado"
+                                            aria-label="Ver <?= e($doc['nombre_original']) ?>">
+                                        <i class="bi bi-eye"></i> <span class="d-none d-sm-inline ms-1">Ver</span>
+                                    </button>
+                                <?php endif; ?>
+                                <a href="<?= url("/expedientes/documento/{$doc['id']}") ?>" 
+                                   class="btn btn-sm btn-outline-secondary px-2 py-1" 
+                                   title="Descargar archivo"
+                                   aria-label="Descargar <?= e($doc['nombre_original']) ?>">
+                                    <i class="bi bi-download"></i> <span class="d-none d-sm-inline ms-1">Descargar</span>
+                                </a>
+                            </div>
                         </div>
                     <?php endforeach; ?>
                 </div>
@@ -452,3 +488,88 @@
         </div>
     </div>
 </div>
+
+<!-- MODAL VISOR INTEGRADO DE PDF Y DOCUMENTOS (Observación 4) -->
+<div class="modal fade" id="modalVisorDocumento" tabindex="-1" aria-labelledby="modalVisorTitulo" aria-hidden="true">
+    <div class="modal-dialog modal-xl modal-dialog-centered" style="max-width: 92vw;">
+        <div class="modal-content shadow-lg border-0" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header text-white py-2 px-3" style="background-color: #1e293b;">
+                <div class="d-flex align-items-center gap-2 text-truncate me-2" style="min-width: 0;">
+                    <i class="bi bi-file-earmark-pdf-fill text-danger fs-4 flex-shrink-0" id="visorIcono"></i>
+                    <div>
+                        <h6 class="modal-title text-truncate fw-semibold mb-0 text-white" id="modalVisorTitulo">Visualizador de Documento</h6>
+                        <small class="text-light opacity-75" style="font-size: 0.72rem;">Mesa de Partes • Visualización Segura</small>
+                    </div>
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                    <a href="#" id="visorBtnNuevaPestana" target="_blank" class="btn btn-sm btn-outline-light" title="Abrir en pestaña nueva">
+                        <i class="bi bi-box-arrow-up-right me-1"></i> <span class="d-none d-md-inline">Pestaña nueva</span>
+                    </a>
+                    <a href="#" id="visorBtnDescargar" class="btn btn-sm btn-primary-custom" title="Descargar documento">
+                        <i class="bi bi-download me-1"></i> <span class="d-none d-md-inline">Descargar</span>
+                    </a>
+                    <button type="button" class="btn-close btn-close-white ms-1" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                </div>
+            </div>
+            <div class="modal-body p-0 position-relative" style="height: 80vh; min-height: 500px; background-color: #334155;">
+                <div id="visorLoading" class="position-absolute top-50 start-50 translate-middle text-center text-white" style="z-index: 5;">
+                    <div class="spinner-border text-light mb-2" role="status"></div>
+                    <div class="small fw-semibold">Cargando documento...</div>
+                </div>
+                <iframe id="visorIframe" src="about:blank" style="width: 100%; height: 100%; border: none; display: block; position: relative; z-index: 10;" title="Visor de Documento"></iframe>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const visorModalEl = document.getElementById('modalVisorDocumento');
+        const visorIframe = document.getElementById('visorIframe');
+        const visorTitulo = document.getElementById('modalVisorTitulo');
+        const visorIcono = document.getElementById('visorIcono');
+        const visorBtnNuevaPestana = document.getElementById('visorBtnNuevaPestana');
+        const visorBtnDescargar = document.getElementById('visorBtnDescargar');
+        const visorLoading = document.getElementById('visorLoading');
+
+        if (visorModalEl && visorIframe) {
+            const bsVisorModal = new bootstrap.Modal(visorModalEl);
+
+            document.querySelectorAll('.btn-ver-documento').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const nombre = this.dataset.nombre || 'Documento';
+                    const urlVer = this.dataset.urlVer;
+                    const urlDescarga = this.dataset.urlDescarga;
+                    const esPdf = this.dataset.esPdf === '1';
+
+                    visorTitulo.textContent = nombre;
+                    visorIcono.className = esPdf 
+                        ? 'bi bi-file-earmark-pdf-fill text-danger fs-4 flex-shrink-0' 
+                        : 'bi bi-file-earmark-image-fill text-info fs-4 flex-shrink-0';
+
+                    visorBtnNuevaPestana.href = urlVer;
+                    visorBtnDescargar.href = urlDescarga;
+
+                    // Mostrar spinner y asignar src
+                    visorLoading.style.display = 'block';
+                    visorIframe.style.opacity = '0';
+                    visorIframe.src = urlVer;
+
+                    visorIframe.onload = function() {
+                        visorLoading.style.display = 'none';
+                        visorIframe.style.opacity = '1';
+                    };
+
+                    bsVisorModal.show();
+                });
+            });
+
+            // Al cerrar el modal, liberar memoria
+            visorModalEl.addEventListener('hidden.bs.modal', () => {
+                visorIframe.src = 'about:blank';
+                visorIframe.style.opacity = '0';
+                visorLoading.style.display = 'block';
+            });
+        }
+    });
+</script>

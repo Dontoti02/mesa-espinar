@@ -111,12 +111,19 @@ $tipoSeleccionado = $_GET['tipo'] ?? old('tipo_tramite_id', '');
 
                     <div class="col-12 col-md-4">
                         <label class="form-label fw-semibold">Teléfono / WhatsApp <span class="text-danger">*</span></label>
-                        <input type="text" 
+                        <input type="tel" 
                                class="form-control" 
+                               id="inputTelefono"
                                name="telefono" 
+                               inputmode="numeric"
+                               pattern="[0-9]{6,15}"
+                               autocomplete="tel"
+                               maxlength="15"
                                value="<?= e(old('telefono')) ?>" 
                                placeholder="Ej. 984000000" 
-                               required>
+                               title="Ingrese solo números (6 a 15 dígitos)"
+                               required
+                               oninput="this.value = this.value.replace(/\D/g, '')">
                     </div>
 
                     <div class="col-12 col-md-4">
@@ -146,7 +153,7 @@ $tipoSeleccionado = $_GET['tipo'] ?? old('tipo_tramite_id', '');
                                         data-requisitos="<?= e($tr['requisitos']) ?>"
                                         data-costo="<?= $tr['requiere_pago'] ? 'S/ ' . number_format($tr['monto'], 2) : 'Gratuito' ?>"
                                         <?= ($tipoSeleccionado == $tr['id']) ? 'selected' : '' ?>>
-                                    <?= e($tr['nombre']) ?> (Plazo aprox: <?= $tr['plazo_referencial_dias'] ?> días)
+                                    <?= e($tr['nombre']) ?>
                                 </option>
                             <?php endforeach; ?>
                         </select>
@@ -208,8 +215,22 @@ $tipoSeleccionado = $_GET['tipo'] ?? old('tipo_tramite_id', '');
 
                     <div class="col-12 col-md-6">
                         <label class="form-label fw-semibold">Archivos de Sustento o Anexos (Opcional)</label>
-                        <input type="file" class="form-control" name="anexos[]" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.png">
-                        <small class="text-muted" style="font-size: 0.75rem;">Comprobantes de pago, boletas, DNI escaneado, etc.</small>
+                        <input type="file" class="form-control" id="inputAnexos" name="anexos[]" multiple accept=".pdf,.doc,.docx,.xls,.xlsx,.jpg,.jpeg,.png">
+                        <small class="text-muted" style="font-size: 0.75rem;">Comprobantes de pago, boletas, DNI escaneado, etc. (Máx. 25 MB por archivo).</small>
+                        
+                        <!-- Lista visual interactiva de documentos adjuntos seleccionados -->
+                        <div id="contenedorListaAnexos" class="mt-2" style="display: none;">
+                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                <span class="small fw-bold text-secondary">
+                                    <i class="bi bi-paperclip me-1"></i> Documentos seleccionados (<span id="contadorAnexos">0</span>):
+                                </span>
+                                <button type="button" class="btn btn-link btn-sm text-danger p-0 text-decoration-none" id="btnLimpiarAnexos" style="font-size: 0.75rem;">
+                                    Limpiar todos
+                                </button>
+                            </div>
+                            <div id="listaVisualAnexos" class="d-flex flex-column gap-2"></div>
+                        </div>
+                        <div id="alertaErrorAnexos" class="alert alert-danger py-1 px-2 small mt-2" style="display: none;"></div>
                     </div>
                 </div>
 
@@ -331,5 +352,144 @@ $tipoSeleccionado = $_GET['tipo'] ?? old('tipo_tramite_id', '');
 
         tramiteSelect.addEventListener('change', actualizarRequisitos);
         actualizarRequisitos();
+
+        // Gestión de archivos adjuntos con DataTransfer (Observación 2)
+        const inputAnexos = document.getElementById('inputAnexos');
+        const contAnexos = document.getElementById('contenedorListaAnexos');
+        const listAnexos = document.getElementById('listaVisualAnexos');
+        const countSpan = document.getElementById('contadorAnexos');
+        const errorAnexos = document.getElementById('alertaErrorAnexos');
+        const btnLimpiar = document.getElementById('btnLimpiarAnexos');
+
+        if (inputAnexos && contAnexos && listAnexos) {
+            let dtAnexos = new DataTransfer();
+            const maxMbAnexo = 25;
+            const extsValidas = ['pdf', 'doc', 'docx', 'xls', 'xlsx', 'jpg', 'jpeg', 'png'];
+
+            function formatTamano(bytes) {
+                if (bytes === 0) return '0 B';
+                const k = 1024;
+                const unidades = ['B', 'KB', 'MB', 'GB'];
+                const i = Math.floor(Math.log(bytes) / Math.log(k));
+                return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + unidades[i];
+            }
+
+            function getIconoExt(ext) {
+                switch(ext) {
+                    case 'pdf': return { icon: 'bi-file-earmark-pdf-fill', color: 'danger' };
+                    case 'doc':
+                    case 'docx': return { icon: 'bi-file-earmark-word-fill', color: 'primary' };
+                    case 'xls':
+                    case 'xlsx': return { icon: 'bi-file-earmark-excel-fill', color: 'success' };
+                    case 'jpg':
+                    case 'jpeg':
+                    case 'png': return { icon: 'bi-file-earmark-image-fill', color: 'info' };
+                    default: return { icon: 'bi-file-earmark-fill', color: 'secondary' };
+                }
+            }
+
+            function escapeTexto(str) {
+                const div = document.createElement('div');
+                div.textContent = str;
+                return div.innerHTML;
+            }
+
+            function refrescarListaAnexos() {
+                listAnexos.innerHTML = '';
+                if (dtAnexos.files.length === 0) {
+                    contAnexos.style.display = 'none';
+                    inputAnexos.value = '';
+                    return;
+                }
+
+                contAnexos.style.display = 'block';
+                countSpan.textContent = dtAnexos.files.length;
+
+                Array.from(dtAnexos.files).forEach((file, index) => {
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    const icono = getIconoExt(ext);
+                    const peso = formatTamano(file.size);
+
+                    const card = document.createElement('div');
+                    card.className = 'p-2 border rounded bg-white d-flex align-items-center justify-content-between gap-2 shadow-sm';
+                    card.innerHTML = `
+                        <div class="d-flex align-items-center gap-2 text-truncate" style="min-width: 0;">
+                            <i class="bi ${icono.icon} text-${icono.color} fs-5 flex-shrink-0"></i>
+                            <div class="text-truncate">
+                                <div class="fw-semibold text-truncate text-dark small" title="${escapeTexto(file.name)}">${escapeTexto(file.name)}</div>
+                                <small class="text-muted" style="font-size: 0.72rem;">
+                                    <span class="badge bg-light text-dark border me-1">${ext.toUpperCase()}</span> ${peso}
+                                </small>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-outline-danger btn-sm px-2 py-1 flex-shrink-0" aria-label="Eliminar archivo ${escapeTexto(file.name)}" title="Eliminar archivo">
+                            <i class="bi bi-trash3"></i> <span class="d-none d-sm-inline ms-1" style="font-size: 0.75rem;">Eliminar</span>
+                        </button>
+                    `;
+
+                    card.querySelector('button').addEventListener('click', function(e) {
+                        e.preventDefault();
+                        eliminarArchivoAnexo(index);
+                    });
+
+                    listAnexos.appendChild(card);
+                });
+            }
+
+            function eliminarArchivoAnexo(indice) {
+                const nuevoDt = new DataTransfer();
+                Array.from(dtAnexos.files).forEach((file, i) => {
+                    if (i !== indice) {
+                        nuevoDt.items.add(file);
+                    }
+                });
+                dtAnexos = nuevoDt;
+                inputAnexos.files = dtAnexos.files;
+                refrescarListaAnexos();
+            }
+
+            inputAnexos.addEventListener('change', function() {
+                errorAnexos.style.display = 'none';
+                errorAnexos.textContent = '';
+                const errores = [];
+
+                Array.from(this.files).forEach(file => {
+                    const ext = file.name.split('.').pop().toLowerCase();
+                    if (!extsValidas.includes(ext)) {
+                        errores.push(`"${file.name}": Formato .${ext} no permitido.`);
+                        return;
+                    }
+                    if (file.size > maxMbAnexo * 1024 * 1024) {
+                        errores.push(`"${file.name}": Supera el tamaño máximo de ${maxMbAnexo} MB.`);
+                        return;
+                    }
+                    const esDuplicado = Array.from(dtAnexos.files).some(f => f.name === file.name && f.size === file.size);
+                    if (esDuplicado) {
+                        errores.push(`"${file.name}": Ya está en la lista de archivos seleccionados.`);
+                        return;
+                    }
+                    dtAnexos.items.add(file);
+                });
+
+                inputAnexos.files = dtAnexos.files;
+                refrescarListaAnexos();
+
+                if (errores.length > 0) {
+                    errorAnexos.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i> ' + errores.join('<br>');
+                    errorAnexos.style.display = 'block';
+                }
+            });
+
+            if (btnLimpiar) {
+                btnLimpiar.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    dtAnexos = new DataTransfer();
+                    inputAnexos.files = dtAnexos.files;
+                    inputAnexos.value = '';
+                    errorAnexos.style.display = 'none';
+                    refrescarListaAnexos();
+                });
+            }
+        }
     });
 </script>

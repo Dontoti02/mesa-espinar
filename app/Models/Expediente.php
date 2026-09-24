@@ -141,8 +141,15 @@ class Expediente extends Model
         $params = [];
 
         if (!empty($filtros['buscar'])) {
-            $conditions[] = "(e.numero_expediente LIKE :b OR e.codigo_seguimiento LIKE :b OR e.numero_documento LIKE :b OR e.nombres LIKE :b OR e.apellidos LIKE :b OR e.razon_social LIKE :b OR e.asunto LIKE :b)";
-            $params[':b'] = '%' . trim($filtros['buscar']) . '%';
+            $term = '%' . trim($filtros['buscar']) . '%';
+            $conditions[] = "(e.numero_expediente LIKE :b1 OR e.codigo_seguimiento LIKE :b2 OR e.numero_documento LIKE :b3 OR e.nombres LIKE :b4 OR e.apellidos LIKE :b5 OR e.razon_social LIKE :b6 OR e.asunto LIKE :b7)";
+            $params[':b1'] = $term;
+            $params[':b2'] = $term;
+            $params[':b3'] = $term;
+            $params[':b4'] = $term;
+            $params[':b5'] = $term;
+            $params[':b6'] = $term;
+            $params[':b7'] = $term;
         }
 
         if (!empty($filtros['estado_id'])) {

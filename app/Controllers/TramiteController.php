@@ -71,6 +71,7 @@ class TramiteController extends Controller
             'numero_documento' => 'required|max:20',
             'nombres' => 'required|max:100',
             'correo' => 'required|email|max:120',
+            'telefono' => 'required|digits|min:6|max:15',
             'tipo_tramite_id' => 'required|integer',
             'asunto' => 'required|max:255',
             'folios' => 'required|integer|min:1',

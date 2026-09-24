@@ -38,6 +38,12 @@ class ReporteController extends Controller
             'tipo_tramite_id' => $_GET['tipo_tramite_id'] ?? ''
         ];
 
+        $errorFecha = $this->normalizarYValidarFechas($filtros);
+        if ($errorFecha !== null) {
+            Session::setFlash('error', $errorFecha);
+            $filtros['fecha_hasta'] = $filtros['fecha_desde'];
+        }
+
         $dataReporte = $this->obtenerDatosReporte($filtros);
 
         $oficinas = $this->oficinaModel->allActivas();
@@ -69,6 +75,12 @@ class ReporteController extends Controller
             'estado_id' => $_GET['estado_id'] ?? '',
             'tipo_tramite_id' => $_GET['tipo_tramite_id'] ?? ''
         ];
+
+        $errorFecha = $this->normalizarYValidarFechas($filtros);
+        if ($errorFecha !== null) {
+            Session::setFlash('error', $errorFecha);
+            $this->redirect('/reportes');
+        }
 
         $dataReporte = $this->obtenerDatosReporte($filtros);
         $expedientes = $dataReporte['expedientes'];
@@ -140,6 +152,12 @@ class ReporteController extends Controller
             'tipo_tramite_id' => $_GET['tipo_tramite_id'] ?? ''
         ];
 
+        $errorFecha = $this->normalizarYValidarFechas($filtros);
+        if ($errorFecha !== null) {
+            Session::setFlash('error', $errorFecha);
+            $this->redirect('/reportes');
+        }
+
         $dataReporte = $this->obtenerDatosReporte($filtros);
 
         $this->render('reportes.imprimir', [
@@ -148,6 +166,19 @@ class ReporteController extends Controller
             'expedientes' => $dataReporte['expedientes'],
             'resumen' => $dataReporte['resumen']
         ], 'none');
+    }
+
+    private function normalizarYValidarFechas(array &$filtros): ?string
+    {
+        $fechaDesde = trim($filtros['fecha_desde'] ?? '');
+        $fechaHasta = trim($filtros['fecha_hasta'] ?? '');
+
+        if (!empty($fechaDesde) && !empty($fechaHasta)) {
+            if ($fechaDesde > $fechaHasta) {
+                return 'La fecha inicial (Desde) no puede ser posterior a la fecha final (Hasta).';
+            }
+        }
+        return null;
     }
 
     private function obtenerDatosReporte(array $filtros): array

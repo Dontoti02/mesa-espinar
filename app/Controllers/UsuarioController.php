@@ -88,7 +88,8 @@ class UsuarioController extends Controller
             'correo' => 'required|email|max:120|unique:usuarios,correo',
             'password' => 'required|min:6',
             'rol_id' => 'required|integer',
-            'oficina_id' => 'required|integer'
+            'oficina_id' => 'required|integer',
+            'telefono' => 'digits|min:6|max:15'
         ]);
 
         if ($validator->fails()) {
@@ -162,7 +163,8 @@ class UsuarioController extends Controller
             'dni' => "required|max:15|unique:usuarios,dni,{$id}",
             'usuario' => "required|min:4|max:50|unique:usuarios,usuario,{$id}",
             'correo' => "required|email|max:120|unique:usuarios,correo,{$id}",
-            'rol_id' => 'required|integer'
+            'rol_id' => 'required|integer',
+            'telefono' => 'digits|min:6|max:15'
         ]);
 
         if ($validator->fails()) {
@@ -221,6 +223,19 @@ class UsuarioController extends Controller
         }
 
         $nuevoEstado = ((int)$usuario['estado'] === 1) ? 0 : 1;
+
+        // Proteger al último superadministrador activo
+        if ($nuevoEstado === 0) {
+            $db = Database::getConnection();
+            $stmtRol = $db->prepare("SELECT slug FROM roles WHERE id = :rol_id");
+            $stmtRol->execute([':rol_id' => $usuario['rol_id']]);
+            $rolSlug = $stmtRol->fetchColumn();
+            if ($rolSlug === 'superadministrador' && $this->usuarioModel->contarSuperadminsActivos() <= 1) {
+                Session::setFlash('error', 'No es posible desactivar al único superadministrador activo del sistema.');
+                $this->redirect('/usuarios');
+            }
+        }
+
         $this->usuarioModel->update((int)$id, ['estado' => $nuevoEstado]);
 
         $accion = $nuevoEstado === 1 ? 'ACTIVAR_USUARIO' : 'DESACTIVAR_USUARIO';
@@ -228,6 +243,59 @@ class UsuarioController extends Controller
 
         $msg = $nuevoEstado === 1 ? 'Usuario activado exitosamente.' : 'Usuario desactivado exitosamente.';
         Session::setFlash('success', $msg);
+        $this->redirect('/usuarios');
+    }
+
+    public function eliminar(string $id): void
+    {
+        if (!Auth::can('usuarios.eliminar')) {
+            Session::setFlash('error', 'No tienes permiso para eliminar usuarios.');
+            $this->redirect('/usuarios');
+        }
+
+        $this->validateCSRF();
+        $usuario = $this->usuarioModel->find((int)$id);
+        if (!$usuario) {
+            Session::setFlash('error', 'Usuario no encontrado.');
+            $this->redirect('/usuarios');
+        }
+
+        // Evitar eliminarse a uno mismo
+        if ((int)$usuario['id'] === Auth::id()) {
+            Session::setFlash('error', 'No puedes eliminar tu propia cuenta activa.');
+            $this->redirect('/usuarios');
+        }
+
+        // Proteger al último superadministrador activo
+        $db = Database::getConnection();
+        $stmtRol = $db->prepare("SELECT slug FROM roles WHERE id = :rol_id");
+        $stmtRol->execute([':rol_id' => $usuario['rol_id']]);
+        $rolSlug = $stmtRol->fetchColumn();
+
+        if ($rolSlug === 'superadministrador' && (int)$usuario['estado'] === 1) {
+            $totalSuperadmins = $this->usuarioModel->contarSuperadminsActivos();
+            if ($totalSuperadmins <= 1) {
+                Session::setFlash('error', 'No es posible eliminar ni desactivar al único superadministrador del sistema.');
+                $this->redirect('/usuarios');
+            }
+        }
+
+        // Verificar si tiene dependencias / registros históricos
+        $tieneHistorial = $this->usuarioModel->tieneRegistrosHistoricos((int)$id);
+
+        if ($tieneHistorial) {
+            // Baja lógica (soft delete) obligatoria para preservar integridad referencial y trazabilidad
+            $this->usuarioModel->update((int)$id, ['estado' => 0]);
+            logAudit('ELIMINAR_USUARIO_LOGICO', 'Usuarios', (string)$id, "Baja lógica de usuario con historial: {$usuario['usuario']}");
+            Session::setFlash('success', "El usuario '{$usuario['usuario']}' ha sido dado de baja (eliminación lógica). Su acceso fue revocado y sus registros históricos en expedientes y auditoría se mantuvieron intactos.");
+        } else {
+            // Eliminación física segura: sin dependencias
+            $db->prepare("DELETE FROM usuarios_roles WHERE usuario_id = :id")->execute([':id' => (int)$id]);
+            $this->usuarioModel->delete((int)$id);
+            logAudit('ELIMINAR_USUARIO_FISICO', 'Usuarios', (string)$id, "Eliminación definitiva de usuario sin dependencias: {$usuario['usuario']}");
+            Session::setFlash('success', "El usuario '{$usuario['usuario']}' no registraba expedientes asociados y fue eliminado exitosamente del sistema.");
+        }
+
         $this->redirect('/usuarios');
     }
 

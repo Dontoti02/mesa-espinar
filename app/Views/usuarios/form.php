@@ -127,7 +127,20 @@ $validationErrors = \App\Core\Session::get('_validation_errors', []);
 
             <div class="col-12 col-md-6">
                 <label class="form-label fw-semibold">Teléfono de Contacto</label>
-                <input type="text" class="form-control" name="telefono" value="<?= e(old('telefono', $usuario['telefono'] ?? '')) ?>" placeholder="Ej. 984000000">
+                <input type="tel" 
+                       class="form-control <?= isset($validationErrors['telefono']) ? 'is-invalid' : '' ?>" 
+                       name="telefono" 
+                       inputmode="numeric"
+                       pattern="[0-9]{6,15}"
+                       autocomplete="tel"
+                       maxlength="15"
+                       value="<?= e(old('telefono', $usuario['telefono'] ?? '')) ?>" 
+                       placeholder="Ej. 984000000"
+                       title="Ingrese solo números (6 a 15 dígitos)"
+                       oninput="this.value = this.value.replace(/\D/g, '')">
+                <?php if (isset($validationErrors['telefono'])): ?>
+                    <div class="invalid-feedback"><?= e($validationErrors['telefono'][0]) ?></div>
+                <?php endif; ?>
             </div>
         </div>
 
