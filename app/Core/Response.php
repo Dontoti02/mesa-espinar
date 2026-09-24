@@ -63,7 +63,24 @@ class Response
         }
 
         $displayName = $displayName ?? basename($filePath);
-        $mimeType = $mimeType ?? (mime_content_type($filePath) ?: 'application/octet-stream');
+        if (empty($mimeType)) {
+            $ext = strtolower(pathinfo($displayName, PATHINFO_EXTENSION));
+            $mimeMap = [
+                'pdf'  => 'application/pdf',
+                'doc'  => 'application/msword',
+                'docx' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'xls'  => 'application/vnd.ms-excel',
+                'xlsx' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                'jpg'  => 'image/jpeg',
+                'jpeg' => 'image/jpeg',
+                'png'  => 'image/png',
+                'webp' => 'image/webp',
+                'gif'  => 'image/gif',
+                'txt'  => 'text/plain; charset=utf-8',
+                'csv'  => 'text/csv; charset=utf-8'
+            ];
+            $mimeType = $mimeMap[$ext] ?? (mime_content_type($filePath) ?: 'application/octet-stream');
+        }
         $fileSize = filesize($filePath);
 
         // Cabeceras seguras para visualización integrada en navegador
