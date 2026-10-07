@@ -23,6 +23,7 @@ class Expediente extends Model
         $prefijo = config('expedientes_prefijo', 'EXP');
         $digitos = (int)config('expedientes_digitos', 6);
         $reinicioAnual = (int)config('expedientes_reinicio_anual', 1);
+        $inicioNumeracion = (int)config('expedientes_inicio_numeracion', 1);
         $anio = date('Y');
 
         $filtroAnio = $reinicioAnual ? "WHERE YEAR(fecha_ingreso) = {$anio}" : "";
@@ -31,11 +32,13 @@ class Expediente extends Model
         $stmt = $this->db()->query($sql);
         $ultimo = $stmt->fetchColumn();
 
-        $siguiente = 1;
+        $siguiente = $inicioNumeracion;
         if ($ultimo) {
             // Extraer parte numérica al final
             if (preg_match('/(\d+)$/', $ultimo, $matches)) {
-                $siguiente = (int)$matches[1] + 1;
+                $ultimoNumero = (int)$matches[1];
+                // Usar el mayor entre el configurado y el último en BD + 1
+                $siguiente = max($inicioNumeracion, $ultimoNumero + 1);
             }
         }
 

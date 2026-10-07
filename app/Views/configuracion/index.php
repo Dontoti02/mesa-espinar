@@ -76,8 +76,14 @@
                         <label class="form-label fw-semibold">Dígitos</label>
                         <input type="number" class="form-control" name="expedientes_digitos" value="<?= e($config['expedientes_digitos'] ?? 6) ?>" min="4" max="10" required>
                     </div>
+                    <div class="col-4">
+                        <label class="form-label fw-semibold">Inicio Numeración</label>
+                        <input type="number" class="form-control" name="expedientes_inicio_numeracion" value="<?= e($config['expedientes_inicio_numeracion'] ?? 1) ?>" min="1" max="999999" required>
+                    </div>
+                </div>
+                <div class="row g-2 mb-3">
                     <div class="col-4 d-flex align-items-end">
-                        <div class="form-check mb-2">
+                        <div class="form-check mb-2 w-100">
                             <input class="form-check-input" type="checkbox" name="expedientes_reinicio_anual" value="1" id="reinicioCheck" <?= (($config['expedientes_reinicio_anual'] ?? '1') == '1') ? 'checked' : '' ?>>
                             <label class="form-check-label small fw-semibold" for="reinicioCheck">
                                 Reinicio Anual

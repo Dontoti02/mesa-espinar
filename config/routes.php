@@ -27,8 +27,7 @@ $router->get('/login', ['App\Controllers\AuthController', 'showLogin'], [GuestMi
 $router->post('/login', ['App\Controllers\AuthController', 'login'], [GuestMiddleware::class]);
 $router->post('/logout', ['App\Controllers\AuthController', 'logout'], [AuthMiddleware::class]);
 
-$router->get('/cambiar-password', ['App\Controllers\AuthController', 'showChangePassword'], [AuthMiddleware::class]);
-$router->post('/cambiar-password', ['App\Controllers\AuthController', 'changePassword'], [AuthMiddleware::class]);
+
 
 // -------------------------------------------------------------------
 // PANEL ADMINISTRATIVO / INTRANET
@@ -39,6 +38,7 @@ $router->get('/dashboard', ['App\Controllers\DashboardController', 'index'], [Au
 $router->get('/expedientes', ['App\Controllers\ExpedienteController', 'index'], [AuthMiddleware::class]);
 $router->get('/expedientes/crear', ['App\Controllers\ExpedienteController', 'create'], [AuthMiddleware::class]);
 $router->post('/expedientes', ['App\Controllers\ExpedienteController', 'store'], [AuthMiddleware::class]);
+$router->post('/expedientes/eliminar', ['App\Controllers\ExpedienteController', 'eliminar'], [AuthMiddleware::class]);
 $router->get('/expedientes/{id}', ['App\Controllers\ExpedienteController', 'show'], [AuthMiddleware::class]);
 $router->get('/expedientes/{id}/imprimir-cargo', ['App\Controllers\ExpedienteController', 'imprimirCargo'], [AuthMiddleware::class]);
 $router->post('/expedientes/{id}/enviar-direccion', ['App\Controllers\ExpedienteController', 'enviarDireccion'], [AuthMiddleware::class]);

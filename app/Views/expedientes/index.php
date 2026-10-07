@@ -3,12 +3,14 @@
         <h4 class="fw-bold mb-1" style="color: var(--primary, #0B4F8A);">Bandeja General de Expedientes</h4>
         <p class="text-muted small mb-0">Consulta general de trámites documentarios institucionales y estado actual.</p>
     </div>
-    <?php if (hasPermission('expedientes.crear')): ?>
-        <a href="<?= url('/expedientes/crear') ?>" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
-            <i class="bi bi-file-earmark-plus-fill"></i>
-            <span>Nuevo Trámite Presencial</span>
-        </a>
-    <?php endif; ?>
+    <div class="d-flex gap-2 flex-wrap">
+        <?php if (hasPermission('expedientes.crear')): ?>
+            <a href="<?= url('/expedientes/crear') ?>" class="btn btn-primary-custom d-inline-flex align-items-center gap-2">
+                <i class="bi bi-file-earmark-plus-fill"></i>
+                <span>Nuevo Trámite Presencial</span>
+            </a>
+        <?php endif; ?>
+    </div>
 </div>
 
 <!-- Filtros de Expedientes -->
@@ -74,9 +76,20 @@
 <!-- Tabla de Expedientes -->
 <div class="card card-custom">
     <div class="table-responsive">
-        <table class="table table-hover align-middle mb-0">
+        <?php if (hasPermission('expedientes.eliminar')): ?>
+            <form action="<?= url('/expedientes/eliminar') ?>" method="POST" id="formEliminarExpedientes" onsubmit="return confirmarEliminarExpedientes(event);">
+                <?= csrf_field() ?>
+        <?php endif; ?>
+        <table class="table table-hover align-middle mb-0" id="tablaExpedientes">
             <thead class="table-light">
                 <tr>
+                    <?php if (hasPermission('expedientes.eliminar')): ?>
+                        <th style="width: 40px;">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="checkAllExpedientes" onchange="toggleAllExpedientes(this)">
+                            </div>
+                        </th>
+                    <?php endif; ?>
                     <th>Nº Expediente</th>
                     <th>Fecha Ingreso</th>
                     <th>Solicitante</th>
@@ -90,7 +103,7 @@
             <tbody>
                 <?php if (empty($expedientes)): ?>
                     <tr>
-                        <td colspan="8" class="text-center py-5 text-muted">
+                        <td colspan="<?= hasPermission('expedientes.eliminar') ? 9 : 8 ?>" class="text-center py-5 text-muted">
                             <i class="bi bi-folder-x fs-1 d-block mb-2 opacity-50"></i>
                             No se encontraron expedientes con los criterios seleccionados.
                         </td>
@@ -98,6 +111,13 @@
                 <?php else: ?>
                     <?php foreach ($expedientes as $exp): ?>
                         <tr>
+                            <?php if (hasPermission('expedientes.eliminar')): ?>
+                                <td>
+                                    <div class="form-check">
+                                        <input class="form-check-input checkExpediente" type="checkbox" name="ids[]" value="<?= $exp['id'] ?>" onchange="actualizarBotonEliminar()">
+                                    </div>
+                                </td>
+                            <?php endif; ?>
                             <td>
                                 <div class="fw-bold text-primary">
                                     <a href="<?= url("/expedientes/{$exp['id']}") ?>" class="text-decoration-none">
@@ -158,25 +178,84 @@
                 <?php endif; ?>
             </tbody>
         </table>
+        <?php if (hasPermission('expedientes.eliminar')): ?>
+            </form>
+        <?php endif; ?>
     </div>
 
-    <!-- Paginación -->
-    <?php if (($pagination['total_pages'] ?? 1) > 1): ?>
-        <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center py-3">
-            <small class="text-muted">
-                Total: <strong><?= $pagination['total_records'] ?></strong> expedientes
-            </small>
-            <nav>
-                <ul class="pagination pagination-sm mb-0">
-                    <?php for ($p = 1; $p <= $pagination['total_pages']; $p++): ?>
-                        <li class="page-item <?= ($p == $pagination['current_page']) ? 'active' : '' ?>">
-                            <a class="page-link" href="<?= url('/expedientes?page=' . $p . '&buscar=' . urlencode($filtros['buscar']) . '&estado_id=' . $filtros['estado_id'] . '&oficina_id=' . $filtros['oficina_id']) ?>">
-                                <?= $p ?>
-                            </a>
-                        </li>
-                    <?php endfor; ?>
-                </ul>
-            </nav>
+    <!-- Paginación y botón eliminar -->
+    <?php if (($pagination['total_pages'] ?? 1) > 1 || hasPermission('expedientes.eliminar')): ?>
+        <div class="card-footer bg-white border-top d-flex justify-content-between align-items-center py-3 flex-wrap gap-2">
+            <div class="d-flex align-items-center gap-3 flex-wrap">
+                <?php if (($pagination['total_pages'] ?? 1) > 1): ?>
+                    <small class="text-muted">
+                        Total: <strong><?= $pagination['total_records'] ?></strong> expedientes
+                    </small>
+                <?php endif; ?>
+                <?php if (hasPermission('expedientes.eliminar')): ?>
+                    <button type="submit" form="formEliminarExpedientes" class="btn btn-danger btn-sm d-inline-flex align-items-center gap-1" disabled id="btnEliminarExpedientes">
+                        <i class="bi bi-trash3-fill"></i>
+                        <span>Eliminar Seleccionados</span>
+                    </button>
+                <?php endif; ?>
+            </div>
+            <?php if (($pagination['total_pages'] ?? 1) > 1): ?>
+                <nav>
+                    <ul class="pagination pagination-sm mb-0">
+                        <?php for ($p = 1; $p <= $pagination['total_pages']; $p++): ?>
+                            <li class="page-item <?= ($p == $pagination['current_page']) ? 'active' : '' ?>">
+                                <a class="page-link" href="<?= url('/expedientes?page=' . $p . '&buscar=' . urlencode($filtros['buscar']) . '&estado_id=' . $filtros['estado_id'] . '&oficina_id=' . $filtros['oficina_id']) ?>">
+                                    <?= $p ?>
+                                </a>
+                            </li>
+                        <?php endfor; ?>
+                    </ul>
+                </nav>
+            <?php endif; ?>
         </div>
     <?php endif; ?>
 </div>
+
+<script>
+    function toggleAllExpedientes(source) {
+        const checkboxes = document.querySelectorAll('.checkExpediente');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = source.checked;
+        });
+        actualizarBotonEliminar();
+    }
+
+    function actualizarBotonEliminar() {
+        const checkboxes = document.querySelectorAll('.checkExpediente:checked');
+        const btn = document.getElementById('btnEliminarExpedientes');
+        const checkAll = document.getElementById('checkAllExpedientes');
+        
+        if (btn) {
+            btn.disabled = checkboxes.length === 0;
+        }
+        
+        if (checkAll) {
+            const allCheckboxes = document.querySelectorAll('.checkExpediente');
+            checkAll.checked = checkboxes.length === allCheckboxes.length && allCheckboxes.length > 0;
+            checkAll.indeterminate = checkboxes.length > 0 && checkboxes.length < allCheckboxes.length;
+        }
+    }
+
+    function confirmarEliminarExpedientes(event) {
+        const checkboxes = document.querySelectorAll('.checkExpediente:checked');
+        if (checkboxes.length === 0) {
+            event.preventDefault();
+            return false;
+        }
+        
+        if (!confirm(`¿Está seguro de eliminar ${checkboxes.length} expediente(s)?\n\nEsta acción es irreversible y eliminará permanentemente:\n- Los expedientes seleccionados\n- Sus documentos adjuntos\n- Su historial de movimientos\n- Sus solicitudes internas relacionadas\n\nEsta acción SOLO puede ser realizada por el Superadministrador.`)) {
+            event.preventDefault();
+            return false;
+        }
+        return true;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+        actualizarBotonEliminar();
+    });
+</script>

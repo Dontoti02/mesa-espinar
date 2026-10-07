@@ -449,4 +449,70 @@ class ExpedienteController extends Controller
         logAudit('VISUALIZAR_DOCUMENTO', 'Documentos', (string)$id, "Visualización en línea de archivo: {$documento['nombre_original']}");
         Response::inline($realFile, $documento['nombre_original'], $documento['mime_type']);
     }
+
+    public function eliminar(): void
+    {
+        if (!Auth::can('expedientes.eliminar')) {
+            Session::setFlash('error', 'No tienes permiso para eliminar expedientes. Solo el Superadministrador puede realizar esta acción.');
+            $this->redirect('/expedientes');
+        }
+
+        $this->validateCSRF();
+
+        $ids = $_POST['ids'] ?? [];
+        if (empty($ids) || !is_array($ids)) {
+            Session::setFlash('error', 'Debe seleccionar al menos un expediente para eliminar.');
+            $this->redirect('/expedientes');
+        }
+
+        $ids = array_map('intval', $ids);
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+
+        $db = Database::getConnection();
+        $db->beginTransaction();
+
+        try {
+            // Obtener números de expediente para auditoría
+            $stmt = $db->prepare("SELECT id, numero_expediente FROM expedientes WHERE id IN ($placeholders)");
+            $stmt->execute($ids);
+            $expedientes = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+
+            if (empty($expedientes)) {
+                Session::setFlash('error', 'No se encontraron expedientes válidos para eliminar.');
+                $db->rollBack();
+                $this->redirect('/expedientes');
+            }
+
+            // Eliminar en orden correcto por FKs
+            // 1. Documentos
+            $stmt = $db->prepare("DELETE FROM expediente_documentos WHERE expediente_id IN ($placeholders)");
+            $stmt->execute($ids);
+
+            $stmt = $db->prepare("DELETE FROM expediente_movimientos WHERE expediente_id IN ($placeholders)");
+            $stmt->execute($ids);
+
+            $stmt = $db->prepare("DELETE FROM solicitudes_internas WHERE expediente_id IN ($placeholders)");
+            $stmt->execute($ids);
+
+            $stmt = $db->prepare("DELETE FROM auditoria WHERE modulo = 'Expedientes' AND registro_id IN ($placeholders)");
+            $stmt->execute($ids);
+
+            // 2. Eliminar expedientes
+            $stmt = $db->prepare("DELETE FROM expedientes WHERE id IN ($placeholders)");
+            $stmt->execute($ids);
+
+            $db->commit();
+
+            $numeros = implode(', ', array_column($expedientes, 'numero_expediente'));
+            logAudit('ELIMINAR_EXPEDIENTES', 'Expedientes', null, "Eliminados expedientes: $numeros");
+            Session::setFlash('success', "Se eliminaron " . count($expedientes) . " expediente(s): $numeros");
+
+        } catch (\Throwable $e) {
+            $db->rollBack();
+            error_log("Error al eliminar expedientes: " . $e->getMessage());
+            Session::setFlash('error', 'Error interno al eliminar los expedientes.');
+        }
+
+        $this->redirect('/expedientes');
+    }
 }

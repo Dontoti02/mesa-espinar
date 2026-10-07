@@ -42,7 +42,7 @@ class ConfiguracionController extends Controller
             'institucion_nombre', 'institucion_sigla', 'institucion_ruc',
             'institucion_direccion', 'institucion_telefono', 'institucion_correo',
             'institucion_web', 'institucion_horario', 'expedientes_prefijo',
-            'expedientes_digitos', 'expedientes_reinicio_anual'
+            'expedientes_digitos', 'expedientes_reinicio_anual', 'expedientes_inicio_numeracion'
         ];
 
         $stmt = $db->prepare("UPDATE configuraciones SET valor = :valor WHERE clave = :clave");

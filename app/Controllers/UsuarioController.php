@@ -4,6 +4,7 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Controller;
+use App\Core\Database;
 use App\Core\Response;
 use App\Core\Session;
 use App\Core\Validator;
@@ -100,7 +101,8 @@ class UsuarioController extends Controller
         }
 
         $hashed = password_hash($_POST['password'], PASSWORD_BCRYPT);
-        $debeCambiar = isset($_POST['debe_cambiar_password']) ? true : false;
+        $esSuperadmin = Auth::hasRole(['superadministrador']);
+        $debeCambiar = !$esSuperadmin && isset($_POST['debe_cambiar_password']);
         $nuevoId = $this->usuarioModel->createUser([
             'nombres' => trim($_POST['nombres']),
             'apellidos' => trim($_POST['apellidos']),
@@ -236,13 +238,19 @@ class UsuarioController extends Controller
             }
         }
 
-        $this->usuarioModel->update((int)$id, ['estado' => $nuevoEstado]);
+        try {
+            $this->usuarioModel->update((int)$id, ['estado' => $nuevoEstado]);
 
-        $accion = $nuevoEstado === 1 ? 'ACTIVAR_USUARIO' : 'DESACTIVAR_USUARIO';
-        logAudit($accion, 'Usuarios', (string)$id, "Estado cambiado a {$nuevoEstado} para {$usuario['usuario']}");
+            $accion = $nuevoEstado === 1 ? 'ACTIVAR_USUARIO' : 'DESACTIVAR_USUARIO';
+            logAudit($accion, 'Usuarios', (string)$id, "Estado cambiado a {$nuevoEstado} para {$usuario['usuario']}");
 
-        $msg = $nuevoEstado === 1 ? 'Usuario activado exitosamente.' : 'Usuario desactivado exitosamente.';
-        Session::setFlash('success', $msg);
+            $msg = $nuevoEstado === 1 ? 'Usuario activado exitosamente.' : 'Usuario desactivado exitosamente.';
+            Session::setFlash('success', $msg);
+        } catch (\Throwable $e) {
+            error_log("Error al cambiar estado de usuario: " . $e->getMessage());
+            Session::setFlash('error', 'Error interno al cambiar el estado del usuario. Consulte al administrador.');
+        }
+
         $this->redirect('/usuarios');
     }
 
@@ -280,20 +288,25 @@ class UsuarioController extends Controller
             }
         }
 
-        // Verificar si tiene dependencias / registros históricos
-        $tieneHistorial = $this->usuarioModel->tieneRegistrosHistoricos((int)$id);
+        try {
+            // Verificar si tiene dependencias / registros históricos
+            $tieneHistorial = $this->usuarioModel->tieneRegistrosHistoricos((int)$id);
 
-        if ($tieneHistorial) {
-            // Baja lógica (soft delete) obligatoria para preservar integridad referencial y trazabilidad
-            $this->usuarioModel->update((int)$id, ['estado' => 0]);
-            logAudit('ELIMINAR_USUARIO_LOGICO', 'Usuarios', (string)$id, "Baja lógica de usuario con historial: {$usuario['usuario']}");
-            Session::setFlash('success', "El usuario '{$usuario['usuario']}' ha sido dado de baja (eliminación lógica). Su acceso fue revocado y sus registros históricos en expedientes y auditoría se mantuvieron intactos.");
-        } else {
-            // Eliminación física segura: sin dependencias
-            $db->prepare("DELETE FROM usuarios_roles WHERE usuario_id = :id")->execute([':id' => (int)$id]);
-            $this->usuarioModel->delete((int)$id);
-            logAudit('ELIMINAR_USUARIO_FISICO', 'Usuarios', (string)$id, "Eliminación definitiva de usuario sin dependencias: {$usuario['usuario']}");
-            Session::setFlash('success', "El usuario '{$usuario['usuario']}' no registraba expedientes asociados y fue eliminado exitosamente del sistema.");
+            if ($tieneHistorial) {
+                // Baja lógica (soft delete) obligatoria para preservar integridad referencial y trazabilidad
+                $this->usuarioModel->update((int)$id, ['estado' => 0]);
+                logAudit('ELIMINAR_USUARIO_LOGICO', 'Usuarios', (string)$id, "Baja lógica de usuario con historial: {$usuario['usuario']}");
+                Session::setFlash('success', "El usuario '{$usuario['usuario']}' ha sido dado de baja (eliminación lógica). Su acceso fue revocado y sus registros históricos en expedientes y auditoría se mantuvieron intactos.");
+            } else {
+                // Eliminación física segura: sin dependencias
+                $db->prepare("DELETE FROM usuarios_roles WHERE usuario_id = :id")->execute([':id' => (int)$id]);
+                $this->usuarioModel->delete((int)$id);
+                logAudit('ELIMINAR_USUARIO_FISICO', 'Usuarios', (string)$id, "Eliminación definitiva de usuario sin dependencias: {$usuario['usuario']}");
+                Session::setFlash('success', "El usuario '{$usuario['usuario']}' no registraba expedientes asociados y fue eliminado exitosamente del sistema.");
+            }
+        } catch (\Throwable $e) {
+            error_log("Error al eliminar usuario: " . $e->getMessage());
+            Session::setFlash('error', 'Error interno al eliminar el usuario. Consulte al administrador.');
         }
 
         $this->redirect('/usuarios');

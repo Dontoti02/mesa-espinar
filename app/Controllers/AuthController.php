@@ -78,12 +78,6 @@ class AuthController extends Controller
         Auth::login($user);
         logAudit('LOGIN_EXITOSO', 'Autenticación', (string)$user['id'], "Inicio de sesión de {$user['usuario']}");
 
-        // 6. Verificar si debe cambiar contraseña
-        if ((int)$user['debe_cambiar_password'] === 1) {
-            Session::setFlash('warning', 'Como medida de seguridad obligatoria, debes actualizar tu contraseña antes de continuar.');
-            $this->redirect('/cambiar-password');
-        }
-
         Session::setFlash('success', "¡Bienvenido/a, {$user['nombres']}!");
         $this->redirect('/dashboard');
     }
@@ -98,56 +92,6 @@ class AuthController extends Controller
         Auth::logout();
         Session::setFlash('info', 'Has cerrado sesión correctamente.');
         $this->redirect('/login');
-    }
-
-    public function showChangePassword(): void
-    {
-        $this->render('auth.cambiar_password', [
-            'pageTitle' => 'Cambio Obligatorio de Contraseña'
-        ], 'auth');
-    }
-
-    public function changePassword(): void
-    {
-        $this->validateCSRF();
-        $userId = Auth::id();
-
-        $validator = Validator::make($_POST, [
-            'password_actual' => 'required',
-            'password_nuevo' => 'required|min:8',
-            'password_confirm' => 'required|matches:password_nuevo'
-        ], [
-            'password_actual' => 'Ingresa tu contraseña actual.',
-            'password_nuevo' => 'La nueva contraseña debe tener al menos 8 caracteres.',
-            'password_confirm' => 'La confirmación de la contraseña no coincide.'
-        ]);
-
-        if ($validator->fails()) {
-            Session::setFlash('error', $validator->firstError('password_actual')
-                ?: ($validator->firstError('password_nuevo') ?: $validator->firstError('password_confirm')));
-            $this->redirect('/cambiar-password');
-        }
-
-        $user = Auth::user();
-        if (!password_verify($_POST['password_actual'], $user['password'])) {
-            Session::setFlash('error', 'Tu contraseña actual es incorrecta.');
-            $this->redirect('/cambiar-password');
-        }
-
-        if ($_POST['password_actual'] === $_POST['password_nuevo']) {
-            Session::setFlash('error', 'La nueva contraseña debe ser distinta a la actual.');
-            $this->redirect('/cambiar-password');
-        }
-
-        $hashed = password_hash($_POST['password_nuevo'], PASSWORD_BCRYPT);
-        $this->usuarioModel->update($userId, [
-            'password' => $hashed,
-            'debe_cambiar_password' => 0
-        ]);
-
-        logAudit('CAMBIO_PASSWORD', 'Usuarios', (string)$userId, 'Actualización de contraseña exitosa.');
-        Session::setFlash('success', 'Contraseña actualizada correctamente. Ya puedes usar el sistema.');
-        $this->redirect('/dashboard');
     }
 
     private function isIpBlocked(string $ip, string $identificador): bool

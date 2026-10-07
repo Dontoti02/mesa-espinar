@@ -161,12 +161,21 @@ $validationErrors = \App\Core\Session::get('_validation_errors', []);
 
             <div class="col-12 col-md-6 d-flex flex-column justify-content-end">
                 <?php if (!$isEdit): ?>
-                    <div class="form-check mb-2">
-                        <input class="form-check-input" type="checkbox" name="debe_cambiar_password" value="1" id="debeCambiarCheck" checked>
-                        <label class="form-check-label small" for="debeCambiarCheck">
-                            Obligar a cambiar la contraseña en el primer inicio de sesión
-                        </label>
-                    </div>
+                    <?php $esSuperadmin = hasRole(['superadministrador']); ?>
+                    <?php if (!$esSuperadmin): ?>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="checkbox" name="debe_cambiar_password" value="1" id="debeCambiarCheck" checked>
+                            <label class="form-check-label small" for="debeCambiarCheck">
+                                Obligar a cambiar la contraseña en el primer inicio de sesión
+                            </label>
+                        </div>
+                    <?php else: ?>
+                        <div class="form-text text-muted small">
+                            <i class="bi bi-shield-check me-1"></i>
+                            Al ser Superadministrador, el usuario no será obligado a cambiar la contraseña en su primer acceso.
+                        </div>
+                        <input type="hidden" name="debe_cambiar_password" value="0">
+                    <?php endif; ?>
                 <?php else: ?>
                     <div class="form-check mb-2">
                         <input class="form-check-input" type="checkbox" name="estado" value="1" id="estadoCheck" <?= ($usuario['estado'] == 1) ? 'checked' : '' ?>>
